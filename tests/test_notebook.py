@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import ast
 import re
 from pdeep.diagnostics import source_identity
 
@@ -58,7 +59,21 @@ def test_routine_notebooks_safe_short_and_independent():
         assert "notebooks/pde_inverse_research" not in sources
         assert all("implemented" in c.get("metadata",{}).get("tags",[]) for c in nb["cells"] if c["cell_type"]=="code")
         if name=="02_train.ipynb":
-            assert 'RUN_MODE = "preview"' in sources and 'MODELS = ("B1",)' in sources
+            assert 'RUN_MODE = "preview"' in sources
+            modes=[node.value for node in ast.parse(sources).body if isinstance(node,ast.Assign)
+                   and any(isinstance(t,ast.Name) and t.id=='RUN_MODE' for t in node.targets)]
+            assert len(modes)==1 and isinstance(modes[0],ast.Constant) and modes[0].value=='preview'
+            # Model selection is user configuration; the preview safety guard is mandatory.
+            configured=[node.value for node in ast.parse(sources).body if isinstance(node,ast.Assign)
+                        and any(isinstance(t,ast.Name) and t.id=='MODELS' for t in node.targets)]
+            assert len(configured)==1 and isinstance(configured[0],ast.Tuple) and configured[0].elts
+            assert {node.value for node in configured[0].elts}<={'A','B0','B1','C'}
             assert "FULL_TRAINING_ENABLED" not in sources and "LAUNCH_FULL_TRAINING" not in sources
             assert "launch_training(PLAN" in sources and "assert_plan_settings" in sources
-        if name=="03_evaluate.ipynb":assert "CHECKPOINTS = {}" in sources and "ALLOW_PARTIAL = False" in sources
+        if name=="03_evaluate.ipynb":
+            # Preserve explicit user-selected trained exports; no requirement to
+            # erase their selection back to the original empty example mapping.
+            assignments=[node for node in ast.parse(sources).body if isinstance(node,ast.Assign)
+                         and any(isinstance(t,ast.Name) and t.id=='CHECKPOINTS' for t in node.targets)]
+            assert len(assignments)==1 and isinstance(assignments[0].value,ast.Dict)
+            assert "ALLOW_PARTIAL = False" in sources

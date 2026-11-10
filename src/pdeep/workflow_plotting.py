@@ -167,13 +167,16 @@ def plot_training_validation(engine,report=None):
         for module,mode in modes:module.training=mode
 
 
-def plot_evaluation(result):
+def plot_evaluation(result,*,representative_case_ids=None):
     """Plot existing metric/field arrays; actual checkpoint labels, no new scoring."""
+    from .evaluation_summary import representative_cases
     directory=Path(result['directory']);s=result['scientific'];paths=[]
+    selected_cases=representative_cases(s,representative_case_ids)
+    plot_directory=directory/'summary_plots';plot_directory.mkdir(exist_ok=True)
     def save(fig,name):
-        fig.tight_layout(rect=(0,0,1,.95));path=directory/name;fig.savefig(path,dpi=115,bbox_inches='tight');plt.close(fig);paths.append(path)
+        fig.tight_layout(rect=(0,0,1,.95));path=plot_directory/name;fig.savefig(path,dpi=115,bbox_inches='tight');plt.close(fig);paths.append(path)
     for pde in sorted({r['pde'] for rows in s['cases'].values() for r in rows}):
-        names=list(s['cases']);case=next(r for r in s['cases'][names[0]] if r['pde']==pde)
+        names=list(s['cases']);case=selected_cases[pde]
         for quantity in case['quantities']:
             ti=0 if pde=='poisson' else 4;fig,axes=plt.subplots(len(names),3,figsize=(10,3*len(names)),squeeze=False)
             datasets={name:np.load(directory/f"{name}__{case['case_id'].replace('/','_')}.npz") for name in names}
@@ -192,23 +195,27 @@ def plot_evaluation(result):
             fig,axes=plt.subplots(1,len(case['quantities']),figsize=(6*len(case['quantities']),3.5),squeeze=False)
             for ax,q in zip(axes[0],case['quantities']):
                 for name,rows in s['cases'].items():
-                    row=next(r for r in rows if r['pde']==pde);series=row['time_errors'][q]
-                    ax.plot([v['physical_time'] for v in series],[v['physical_RMSE'] for v in series],label=name+' '+row['training_status'])
+                    group=[r for r in rows if r['pde']==pde];series=group[0]['time_errors'][q]
+                    rms=[np.sqrt(np.mean([r['time_errors'][q][i]['physical_MSE'] for r in group])) for i in range(len(series))]
+                    ax.plot([v['physical_time'] for v in series],rms,label=name+' '+group[0]['training_status'])
                 ax.set(title=q,xlabel='physical time',ylabel='physical RMSE');ax.legend(fontsize=7)
-            fig.suptitle(pde+' T1 validation | actual selected checkpoints');save(fig,'time_'+pde+'.png')
+            fig.suptitle(pde+f' T1 validation | all {len(group)} cases, equal-case MSE then square root');save(fig,'time_'+pde+'.png')
     if 'D' in s['cases']:
-        for row in s['cases']['D']:
+        for pde,representative in selected_cases.items():
+            row=next(r for r in s['cases']['D'] if r['pde']==pde and r['case_id']==representative['case_id'])
             a=np.load(directory/f"D__{row['case_id'].replace('/','_')}.npz");ti=0 if row['pde']=='poisson' else 4
             fig,axes=plt.subplots(1,len(row['quantities']),figsize=(5*len(row['quantities']),3.6),squeeze=False)
             for ax,q in zip(axes[0],row['quantities']):
                 std=np.sqrt(a['latent_variance_'+q][0,ti*4096:(ti+1)*4096,0]);im=_image(ax,std,q+' latent posterior std',error=True);fig.colorbar(im,ax=ax)
-            fig.suptitle(f"D exact Gaussian, no training | {row['pde']} T1 validation | "+('time absent' if row['pde']=='poisson' else 't=.2')+' | no measurement noise added');save(fig,'D_uncertainty_'+row['pde']+'.png')
+            fig.suptitle(f"D exact Gaussian, no training | {row['pde']} {row['case_id']} T1 validation | "+('time absent' if row['pde']=='poisson' else 't=.2')+' | no measurement noise added');save(fig,'D_uncertainty_'+row['pde']+'.png')
     selected=[name for name in ('B0','B1') if name in s['cases']]
     if selected:
         fig,axes=plt.subplots(1,len(s['aggregate'][selected[0]]['by_PDE']),figsize=(12,3.5),squeeze=False)
         for ax,pde in zip(axes[0],s['aggregate'][selected[0]]['by_PDE']):
             for name in selected:
-                row=next(r for r in s['cases'][name] if r['pde']==pde);ax.plot(row['refinement']['Phi_by_iteration'],marker='o',label=name+' '+row['training_status'])
+                group=[r for r in s['cases'][name] if r['pde']==pde];values=np.array([r['refinement']['Phi_by_iteration'] for r in group])
+                ax.plot(values.mean(0),marker='o',label=name+' mean over '+str(len(group))+' cases')
+                ax.fill_between(np.arange(values.shape[1]),np.quantile(values,.1,axis=0),np.quantile(values,.9,axis=0),alpha=.15)
             ax.set(title=pde,xlabel='inverse refinement k (not time)',ylabel='Phi');ax.legend(fontsize=7)
-        fig.suptitle('T1 validation | B0/B1 actual selected checkpoints, separate weights');save(fig,'B_refinement.png')
+        fig.suptitle('T1 validation | all cases: mean Phi with 10–90% case band; separate B0/B1 weights');save(fig,'B_refinement.png')
     return paths
