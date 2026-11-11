@@ -220,7 +220,8 @@ def test_notebook_bootstrap_exact_helper_and_safe_configuration():
     # Full bootstrap cell really executes its local branch; clone/install/mount guards elsewhere above.
     exec(code,scope)
     assert scope['BOOTSTRAP'] is None and not scope['SETUP']['persistence'].drive_enabled
-    exec(''.join(n['cells'][4]['source']),scope)
+    configuration=next(''.join(c['source']) for c in n['cells'] if c['cell_type']=='code' and 'RUN_MODE = "preview"' in ''.join(c['source']) and 'MODELS = ' in ''.join(c['source']))
+    exec(configuration,scope)
     assert scope['RUN_MODE']=='preview'
 
 

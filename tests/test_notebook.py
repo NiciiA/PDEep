@@ -51,7 +51,7 @@ def test_notebook_source_identity_ignores_execution_outputs(tmp_path):
 
 
 def test_routine_notebooks_safe_short_and_independent():
-    for name,expected in (("01_explore.ipynb",14),("02_train.ipynb",13),("03_evaluate.ipynb",9)):
+    for name,expected in (("01_explore.ipynb",14),("02_train.ipynb",22),("03_evaluate.ipynb",9)):
         nb=json.loads((ROOT/"notebooks"/name).read_text())
         # Preserve the compact T1 path, with a bounded opt-in G1 addition.
         assert len([c for c in nb['cells'] if not c.get('metadata',{}).get('phase_G')])==expected
@@ -81,8 +81,8 @@ def test_routine_notebooks_safe_short_and_independent():
             assert len(configured)==1 and isinstance(configured[0],ast.Tuple) and configured[0].elts
             assert {node.value for node in configured[0].elts}<={'A_GEO','C_GEO'}
             assert "FULL_TRAINING_ENABLED" not in sources and "LAUNCH_FULL_TRAINING" not in sources
-            assert "RESULTS.update(launch(PLAN" in sources and "expected_identity=REVIEWED_IDENTITY" in sources
-            assert sources.count("offer_launch(")==1
+            assert "RESULTS = launch(PLAN" in sources and "expected_identity=REVIEWED_IDENTITY" in sources
+            assert "offer_launch(" not in sources and "input(" not in sources
         if name=="03_evaluate.ipynb":
             # Preserve explicit user-selected trained exports; no requirement to
             # erase their selection back to the original empty example mapping.

@@ -119,21 +119,14 @@ def test_query_bank_design_is_reproducible_and_input_safe(certificate):
         if p!='poisson':assert set(np.round(v[1],5))=={0,.02,.05,.1,.2,.35,.5,.75,1}
 
 
-def test_notebook_single_launch_and_no_legacy_path():
+def test_notebook_direct_launch_and_no_legacy_path():
     n=json.loads((ROOT/'notebooks/02_train.ipynb').read_text());code='\n'.join(''.join(c['source']) for c in n['cells'] if c['cell_type']=='code')
     assert 'RUN_MODE = "preview"' in code and 'MODELS = ("A_GEO", "C_GEO")' in code
-    assert code.count('offer_launch(')==1
-    assert 'legacy_training' not in code and 'GEO_ENGINE' not in code 
-    assert 'RESULTS.update(launch(PLAN' in code
-    import ast
-    # Launch is inside callback only, never an executed top-level expression.
-    tree=ast.parse(code)
-    for statement in tree.body:
-        if isinstance(statement,(ast.FunctionDef,ast.AsyncFunctionDef)):continue
-        for call in ast.walk(statement):
-            if isinstance(call,ast.Call):
-                name=call.func.id if isinstance(call.func,ast.Name) else call.func.attr if isinstance(call.func,ast.Attribute) else ''
-                assert name not in {'Engine','run','update','launch','step'}
+    assert 'offer_launch(' not in code and 'input(' not in code
+    assert 'legacy_training' not in code and 'GEO_ENGINE' not in code
+    assert 'RESULTS = launch(PLAN' in code and 'expected_identity=REVIEWED_IDENTITY' in code
+    assert 'training_settings()' in code and '!= SETTINGS' in code
+    assert 'DIAGNOSTIC_RUN_MODE = "preview"' in code
 
 
 def test_colab_pinning_local_is_noop(tmp_path,monkeypatch):
@@ -162,7 +155,7 @@ def test_fixed_physical_observations_survive_conditioning_remesh():
 def test_notebook_tiny_budget_uses_overfit_setting():
     import ast
     n=json.loads((ROOT/'notebooks/02_train.ipynb').read_text());scope={}
-    exec(''.join(n['cells'][4]['source']),scope)
+    exec(next(''.join(c['source']) for c in n['cells'] if c['cell_type']=='code' and 'BENCHMARK = ' in ''.join(c['source']) and 'OVERFIT_UPDATES = ' in ''.join(c['source'])),scope)
     scope.update(IS_COLAB=False,PERSISTENCE=None,RUN_NAME='budget-fixture',ADVANCED={},
         SETUP={'local_output_dir':'/tmp/fixture'},SETUP_CONFIGURATION=('url','ref','project',False,'drive','local'),
         REPO_URL='url',REPO_REF='ref',PROJECT_DIR='project',USE_GOOGLE_DRIVE=False,DRIVE_ROOT='drive',LOCAL_OUTPUT_DIR='local')

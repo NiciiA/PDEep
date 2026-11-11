@@ -88,21 +88,22 @@ def test_launch_render_never_calls_callback(monkeypatch):
     # Deliberately no synthetic button click: this task authorizes ZERO training.
 
 
-def test_saved_train_mode_does_not_execute_notebook_callbacks(monkeypatch):
+def test_saved_preview_does_not_launch_and_enabled_mode_is_synchronous(monkeypatch):
     import nbformat
-    monkeypatch.setattr('IPython.display.display',lambda *args:None)
+    from types import SimpleNamespace
     nb=nbformat.read(ROOT/'notebooks/02_train.ipynb',4)
-    # Select by behavior, never by a cell index that changes during simplification.
-    cell=next(c for c in nb.cells if c.cell_type=='code' and 'def _start_reviewed_training' in c.source)
-    def forbidden(*a,**kw):raise AssertionError('Run All attempted training')
-    import pdeep.notebook_workflows as legacy
+    cell=next(c for c in nb.cells if c.cell_type=='code' and 'RESULTS = launch(PLAN' in c.source)
     import pdeep.smooth.workflows as smooth
-    monkeypatch.setattr(legacy,'launch_training',forbidden)
-    monkeypatch.setattr(smooth,'launch',forbidden)
-    for mode in ('preview','train','resume'):
-        scope={'RUN_MODE':mode,'PLAN':None,'training_settings':forbidden}
-        exec(cell.source,scope)
-        assert scope['RESULTS']=={} and scope['LAUNCH_BUTTON'].enabled==(mode!='preview')
+    calls=[]
+    monkeypatch.setattr(smooth,'launch',lambda *a,**kw:calls.append(kw['expected_identity']) or {'mocked':True})
+    scope={'RUN_MODE':'preview'};exec(cell.source,scope);assert calls==[]
+    for mode in ('train','resume'):
+        scope=dict(RUN_MODE=mode,ACTION='fresh' if mode=='train' else 'resume',
+            training_settings=lambda:{},SETTINGS={'certificate_path':'cert'},
+            CERTIFICATION=SimpleNamespace(verified=True,location='cert',require=lambda:None),
+            PLAN=object(),REVIEWED_IDENTITY='reviewed',Dashboard=lambda **kw:None)
+        exec(cell.source,scope);assert scope['RESULTS']=={'mocked':True}
+    assert calls==['reviewed','reviewed']
     evaluation=nbformat.read(ROOT/'notebooks/03_evaluate.ipynb',4)
     retained=next(c for c in evaluation.cells if c.cell_type=='code' and 'def _evaluate_retained_T1' in c.source)
     exec(retained.source,{'ENABLE_T1_EVALUATION':False})

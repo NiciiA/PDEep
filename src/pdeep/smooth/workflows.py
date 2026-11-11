@@ -25,8 +25,9 @@ def prepare(*,models=('A_GEO',),benchmark=BENCHMARK_ID,capacity='medium',pdes=PD
     require(models and len(set(models))==len(models) and set(models)<={'A_GEO','C_GEO'},'select independent A_GEO and/or C_GEO')
     require(benchmark==BENCHMARK_ID,'G1 rough remains blocked; select the separately versioned G1_smooth_v1')
     require(action in {'fresh','resume'},'ACTION must be fresh or resume')
-    from .qualification import ensure_compatible_certificate
-    certificate,_=ensure_compatible_certificate(path=certificate_path);authorize(certificate,benchmark=benchmark,pdes=pdes,families=SEEN)
+    from ..learning_diagnostics.certificates import resolve_certification
+    resolution=resolve_certification(benchmark,{'certification_id':None,'pdes':pdes,'families':SEEN},configured_path=certificate_path)
+    certificate=resolution.require();authorize(certificate,benchmark=benchmark,pdes=pdes,families=SEEN)
     configs=[];paths=[]
     run_name=run_name or 'manual-'+time.strftime('%Y%m%d-%H%M%S')
     for name in models:
@@ -61,12 +62,12 @@ def preview(plan):
     return [{'architecture':c.architecture,'benchmark':c.benchmark,'capacity':c.capacity,'parameter_count':counts.get((c.architecture,c.capacity),'verification fixture'),'independent_trainable_instance':True,'conditioning_meshes_and_actual_anchors':mesh_sizes(c),'device':c.device,'dtype':c.precision,'experiment':c.preset,'successful_updates':c.updates,'case_pool':c.case_pool_size,'case_sampling':'full lazy train split' if c.cases_per_geometry is None else 'explicit finite diagnostic pool','PDEs':c.pdes,'geometry_instances':c.training_families,'fixed_observation_set':0,'query_bank_per_case':c.bank_queries,'training_queries_per_case':c.query_count,'validation_grid':f'{c.validation_grid}x{c.validation_grid} domain-clipped x9 dynamic times xquantity','validation_scope':'same TRAIN cases; memorization only' if c.preset=='tiny_overfit' else 'paired unseen physical cases on seen geometries','reference_policy':POLICY,'conditioning_h':c.conditioning_h,'real_loss':'field + .1 auxiliary'+(' + .1 weak + .1 initial + .1 boundary' if c.architecture=='C_GEO' else ''),'certification_id':plan.certificate['certification_id'],'certification_status':plan.certificate['pass_fail_status'],'normalization_id':n.identity,'local_checkpoints':str(Path(plan.run_root)/BENCHMARK_ID/'runs'/c.architecture/c.run_id/'checkpoints'),'Drive_sync':plan.persistence.drive_enabled,'resume':p,'training_status':'pending user execution; constructing preview performs0 optimizer updates'} for c,p in zip(plan.configs,plan.checkpoints)]
 
 
-def launch(plan,*,expected_identity=None,notebook=True):
-    require(expected_identity==plan.identity,'reviewed plan changed; rerun preview and render a new launch button')
-    from ..train_monitor import LiveMonitor
+def launch(plan,*,expected_identity=None,notebook=True,progress_callback=None,monitor=None):
+    require(expected_identity==plan.identity,'reviewed plan changed; rerun preview before executing the training cell')
+    from ..learning_diagnostics.dashboard import Dashboard
+    monitor=monitor or Dashboard(notebook=notebook,progress_callback=progress_callback)
     results={}
     for c,path in zip(plan.configs,plan.checkpoints):
-        monitor=LiveMonitor(enabled=True,notebook=notebook)
         if plan.action=='resume':engine=resume(path,plan.run_root,device=c.device,persistence=plan.persistence,monitor=monitor)
         else:engine=Engine(c,plan.run_root,certificate=plan.certificate,persistence=plan.persistence,monitor=monitor)
         engine.run();results[c.architecture]=engine
@@ -92,8 +93,8 @@ def evaluate_checkpoint(path,output_dir,*,geometry_held_out=False,device=None,di
     original_device=cfg['device'];cfg['device']=select_device('auto' if device is None else device)
     config=Config(**cfg);n=normalizers(metadata['certificate'])
     model=GeometryModel(ModelConfig(**payload['model_config']),n).to(config.device);model.load_state_dict(payload['model'],strict=True)
-    from .qualification import ensure_compatible_certificate
-    qualified,_=ensure_compatible_certificate()
+    from ..learning_diagnostics.certificates import resolve_certification
+    qualified=resolve_certification(requested_capabilities={'certification_id':None}).require()
     engine=EvaluationEngine(config,Path(output_dir)/'smooth_evaluation'/metadata['artifact_id'],certificate=metadata['certificate'],execution_certificate=qualified,model=model,allow_existing_run=True)
     engine.state.successful=payload['training_state']['successful']
     report=engine.validate(geometry_held_out=geometry_held_out,diagnostics=diagnostics)

@@ -97,8 +97,9 @@ def test_bootstrap_order_and_no_unsafe_reload_tricks():
     assert 'install_checkout' not in setup
     src=(ROOT/'src/pdeep/smooth/bootstrap.py').read_text()
     assert 'importlib.reload' not in src and 'del sys.modules' not in src
-    assert 'ensure_compatible_certificate' in ''.join(nb['cells'][7]['source'])
-    assert 'PLAN = prepare' in ''.join(nb['cells'][8]['source'])
+    code='\n'.join(''.join(c['source']) for c in nb['cells'] if c['cell_type']=='code')
+    assert 'resolve_certification(' in code and 'ensure_compatible_certificate(' not in code
+    assert 'PLAN = prepare' in code
 
 
 def test_changed_time_step_is_reported_as_a_real_numeric_difference():

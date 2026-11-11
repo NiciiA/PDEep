@@ -4,13 +4,14 @@
 
 `02_train.ipynb` now defaults to the separately versioned smooth geometry benchmark.
 Original rough G1 remains blocked. T1 physics, exact D, A/B0/B1/C APIs, checkpoints
-and historical results are preserved. No model is trained by notebook Run All.
+and historical results are preserved. Saved notebook defaults are preview-only;
+**Run All with training enabled can start training**.
 See the [smooth scientific definition](docs/scientific_contract_G1_smooth_v1.md),
 [numerical certificate](certifications/G1_smooth_v1/default.json), and generated
 `reports/smooth_finalization/report.md` for evidence and limits.
 
 - **Explore:** [01_explore.ipynb](notebooks/01_explore.ipynb) retains T1 and existing geometry diagnostics.
-- **Train manually:** [02_train.ipynb](notebooks/02_train.ipynb), independently select A_GEO or C_GEO; preview first, then click the single launch button.
+- **Train manually:** [02_train.ipynb](notebooks/02_train.ipynb), independently select A_GEO or C_GEO; preview first, then execute the synchronous launch cell.
 - **Evaluate:** [03_evaluate.ipynb](notebooks/03_evaluate.ipynb) retains selected T1 comparisons and adds a separate opt-in G1_smooth checkpoint section. D is not an exact geometry-field posterior.
 - **Technical archive:** [pde_inverse_research.ipynb](notebooks/pde_inverse_research.ipynb); not required for training.
 
@@ -57,33 +58,28 @@ suppresses raw Git/pip output and refuses credential-bearing URLs.
    It validates CUDA and mounts Drive if enabled. It never resets source files,
    reloads binary modules, restarts the kernel or changes a loaded NumPy installation.
    Python>=3.12 is required for this smooth workflow.
-3. Run experiment configuration, then the separate **Compatible reference certification**
-   cell, then plan review. A compatible immutable environment certificate is reused.
-   A new platform/dependency profile performs an explicit bounded CPU64 qualification
-   (96 fixed cases, roughly10–12 minutes locally), with stage progress and zero optimizer
-   updates. Actual values must agree with frozen original references within1e-6 RMS;
-   inherited spatial/time bounds plus measured discrepancy must remain below0.2% RMS.
-   The exact original certified meshes and C3 bases are loaded from verified portable
-   artifacts; identities are recomputed from their arrays, never copied onto new meshes.
-   The engine checks certificate/source/dependencies, canonical reference mesh specification,
-   prior, observations and normalization. Colab never
-   silently falls back to CPU. Local CPU/MPS uses the installed project, with no
-   clone/install/Google import or Drive mount.
-4. **A tiny-overfit:** `MODELS=("A_GEO",)`, `EXPERIMENT="tiny_overfit"`,
-   `OVERFIT_UPDATES=100` (selected automatically for tiny_overfit), `ACTION="fresh"`.
-   **C tiny-overfit:** same settings with `MODELS=("C_GEO",)` and an independent run.
-5. Review preview, set `RUN_MODE="train"`, rerun configuration/preview/launch cells,
-   then **click**. Cell execution, saved modes and Run All cannot launch training.
-   Inspect actual initial/final common field errors, wave u/v separately, real
-   objective terms and gradient histories. Overfit success is pending execution;
-   it requires>=75% field-error reduction or the declared numerical floor.
-6. **1,000 A updates:** `MODELS=("A_GEO",)`, `EXPERIMENT="bounded"`, `UPDATES=1000`,
-   `SAVE_EVERY=VALIDATE_EVERY=250`. For **1,000 C updates**, select only`("C_GEO",)`
-   in a separate run.500 is also supported. Physical cases sample the full lazy12000-case/PDE train split. Each
-   case uses a declared finite point-query bank. CPU64 reference warm-up across
-   many new trajectories can take hours; previews never generate it. For an
-   explicitly labeled finite diagnostic pool, set advanced`cases_per_geometry=2`
-   (or another small count). This changes experiment scope, not the prior/reference.
+3. Run **Existing numerical certification**. The complete issued certificate
+   `524b9aa89bb0baa3606cc47657d6ee31c95ef2d8a212e9c96b6a4ba43d33c711`
+   is resolved from the configured path, local cache, Drive or project registry.
+   Original-byte checksum, scientific sources, runtime/dependencies, solver,
+   prior, normalization and exact mesh/capabilities are checked. Missing or
+   incompatible evidence blocks training; **no 96-case qualification runs automatically**.
+   The explicit local policy may reuse an existing native-runtime qualification.
+4. Use **Geometry-aware model learning diagnostics** first. Select
+   `DIAGNOSTIC_MODEL="A_GEO"`, `DIAGNOSTIC_EXPERIMENT="poisson_square"` (or one
+   of the other five supported diagnostics). Review actual fixed TRAIN data,
+   parameter counts, scales and complete resolved configuration. The independent
+   diagnostic grid uses exact continuous physical times; hidden fields are targets only.
+5. Set `DIAGNOSTIC_RUN_MODE="train"` with fresh action and execute the diagnostic
+   launch cell. It starts immediately and stays executing until completion/error.
+   A single dashboard updates in place. **Run All with enabled training can also train.**
+   The saved defaults do not optimize. Diagnostic training remains for the user to execute.
+6. The optional mixed/bounded workflow below retains the original APIs. Its
+   `tiny_overfit` fixes six cases but resamples training queries; the new single-case
+   diagnostic freezes main queries as well. Keep `RUN_MODE="preview"` while using
+   the diagnostic section. Deliberately selected bounded runs remain manual;
+   large CPU64 reference-bank warm-up can take hours. No research training starts automatically.
+   See [exact configurations and the diagnosis guide](docs/geometry_learning_diagnostics.md).
 
 ### Checkpoints, resume and evaluation
 
@@ -100,7 +96,7 @@ runs on a mounted Colab Drive, not by local simulations.
 
 After disconnect: reopen the same commit, rerun setup/remount Drive, choose the
 same architecture/capacity/PDE/device, set`ACTION="resume"`, select the verified
-Drive manifest in`RESUME_CHECKPOINT`, preview, choose`RUN_MODE="resume"`, then click.
+Drive manifest in`RESUME_CHECKPOINT`, preview, choose`RUN_MODE="resume"`, then execute its launch cell.
 The saved optimizer moments, scheduler, RNG, data ordering and counters are restored;
 the saved budget is not silently extended. Missing point banks regenerate from
 saved deterministic recipes. Exact training resume requires the same device type,
@@ -836,17 +832,17 @@ explicit new, parent-linked artifact only after verifying all saved meshes/prior
 are identical. It copies the full tensor payload unchanged. Affected fine meshes
 and unreviewed source changes are rejected; originals are never rewritten.
 
-Notebook **Run All only renders launch buttons**, even if train/resume settings
-were saved. A fresh click is required for legacy training; G1 research is also
-blocked at the engine entry point. The G3 verification executes a saved-train copy
-with engines/optimizers blocked and records zero training calls. No new unintended
-updates occurred during this follow-up.
+The archival/legacy launch controls remain preserved. The current **02_train.ipynb**
+uses direct synchronous launch cells with saved preview defaults. **Run All with
+train/resume mode enabled can train.** Original rough G1 remains blocked at the
+engine entry point; the separately certified smooth benchmark has its explicit
+manual workflow. No new training updates were executed while implementing diagnostics.
 
 ## Colab setup/reference portability repair
 
 See [the repair explanation](docs/colab_reference_repair.md) and local verification
 outputs under`reports/colab_repair/`. The ordinary fresh-session path uses the
-existing consistent scientific stack plus numerical qualification; **no restart**
+existing consistent scientific stack plus existing compatible numerical evidence; **no restart**
 is requested. Colab initializes NumPy itself, so pinning a different version after
 startup was unsafe. A session already damaged by the OLD installer (loaded NumPy
 differs from its on-disk installation) cannot be repaired safely in place: choose
@@ -854,3 +850,9 @@ differs from its on-disk installation) cannot be repaired safely in place: choos
 notebook from the new commit. This limitation applies to that already contaminated
 session, not to the new workflow. No automatic restart or hidden scientific worker
 is used. Native CUDA/Drive still require actual Colab verification.
+
+Geometry-aware learning diagnosis is available directly in [02_train.ipynb](notebooks/02_train.ipynb).
+See [the fixed-case diagnostic guide](docs/geometry_learning_diagnostics.md) for exact A/C experiment selections,
+read-only inspection of existing trained checkpoints, certificate reuse, direct synchronous launch and resume.
+Both saved run modes are `preview`. **Run All with `train`/`resume` enabled can train**; no launch button is required.
+Missing/incompatible certification blocks training and never automatically launches numerical qualification.
