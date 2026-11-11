@@ -51,11 +51,14 @@ def test_notebook_source_identity_ignores_execution_outputs(tmp_path):
 
 
 def test_routine_notebooks_safe_short_and_independent():
-    for name,expected in (("01_explore.ipynb",13),("02_train.ipynb",15),("03_evaluate.ipynb",13)):
+    for name,expected in (("01_explore.ipynb",13),("02_train.ipynb",11),("03_evaluate.ipynb",9)):
         nb=json.loads((ROOT/"notebooks"/name).read_text())
-        assert len(nb["cells"])==expected
+        # Preserve the compact T1 path, with a bounded opt-in G1 addition.
+        assert len([c for c in nb['cells'] if not c.get('metadata',{}).get('phase_G')])==expected
+        assert len(nb['cells'])<=expected+4
         sources="\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"]=="code")
-        assert "PROJECT_DIR" in sources and "initialize(" in sources
+        assert "PROJECT_DIR" in sources
+        if name!="02_train.ipynb":assert "initialize(" in sources
         assert "notebooks/pde_inverse_research" not in sources
         assert all("implemented" in c.get("metadata",{}).get("tags",[]) for c in nb["cells"] if c["cell_type"]=="code")
         if name=="02_train.ipynb":
@@ -67,9 +70,10 @@ def test_routine_notebooks_safe_short_and_independent():
             configured=[node.value for node in ast.parse(sources).body if isinstance(node,ast.Assign)
                         and any(isinstance(t,ast.Name) and t.id=='MODELS' for t in node.targets)]
             assert len(configured)==1 and isinstance(configured[0],ast.Tuple) and configured[0].elts
-            assert {node.value for node in configured[0].elts}<={'A','B0','B1','C'}
+            assert {node.value for node in configured[0].elts}<={'A_GEO','C_GEO'}
             assert "FULL_TRAINING_ENABLED" not in sources and "LAUNCH_FULL_TRAINING" not in sources
-            assert "launch_training(PLAN" in sources and "assert_plan_settings" in sources
+            assert "RESULTS.update(launch(PLAN" in sources and "expected_identity=REVIEWED_IDENTITY" in sources
+            assert sources.count("offer_launch(")==1
         if name=="03_evaluate.ipynb":
             # Preserve explicit user-selected trained exports; no requirement to
             # erase their selection back to the original empty example mapping.

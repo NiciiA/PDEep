@@ -1,0 +1,235 @@
+{
+  "version": "stage3-topk-audit-v1",
+  "root_seed": 20261108,
+  "query_y": 0.5,
+  "dynamic_physical_time": 0.2,
+  "pde_order": [
+    "poisson",
+    "heat",
+    "wave"
+  ],
+  "case_split": "train",
+  "case_id": 0,
+  "model_state": "original independent A representation initialization",
+  "legacy_retrieval": "4 nearest coarse + 8 nearest fine; learned content/distance softmax over selected anchors",
+  "measurement": "max absolute fused feature difference across x=0.5 +/- epsilon, captured before replacement",
+  "samples": [
+    {
+      "epsilon": 0.01,
+      "feature_jump_per_pde": [
+        0.32733502984046936,
+        0.40654265880584717,
+        0.46858716011047363
+      ],
+      "indices_left": [
+        9,
+        5,
+        6,
+        10,
+        51,
+        43,
+        52,
+        44,
+        42,
+        50,
+        35,
+        59
+      ],
+      "indices_right": [
+        6,
+        10,
+        9,
+        5,
+        44,
+        52,
+        51,
+        43,
+        53,
+        45,
+        36,
+        60
+      ]
+    },
+    {
+      "epsilon": 0.001,
+      "feature_jump_per_pde": [
+        0.055996060371398926,
+        0.0633125975728035,
+        0.08220988512039185
+      ],
+      "indices_left": [
+        9,
+        5,
+        6,
+        10,
+        51,
+        43,
+        52,
+        44,
+        42,
+        50,
+        35,
+        59
+      ],
+      "indices_right": [
+        6,
+        10,
+        9,
+        5,
+        44,
+        52,
+        51,
+        43,
+        53,
+        45,
+        36,
+        60
+      ]
+    },
+    {
+      "epsilon": 0.0001,
+      "feature_jump_per_pde": [
+        0.028281211853027344,
+        0.029950380325317383,
+        0.027352094650268555
+      ],
+      "indices_left": [
+        9,
+        5,
+        6,
+        10,
+        51,
+        43,
+        52,
+        44,
+        42,
+        50,
+        35,
+        59
+      ],
+      "indices_right": [
+        6,
+        10,
+        9,
+        5,
+        44,
+        52,
+        51,
+        43,
+        53,
+        45,
+        36,
+        60
+      ]
+    },
+    {
+      "epsilon": 1e-05,
+      "feature_jump_per_pde": [
+        0.026538372039794922,
+        0.027171850204467773,
+        0.02422928810119629
+      ],
+      "indices_left": [
+        9,
+        5,
+        6,
+        10,
+        51,
+        43,
+        52,
+        44,
+        42,
+        50,
+        35,
+        59
+      ],
+      "indices_right": [
+        6,
+        10,
+        9,
+        5,
+        44,
+        52,
+        51,
+        43,
+        53,
+        45,
+        36,
+        60
+      ]
+    },
+    {
+      "epsilon": 1e-06,
+      "feature_jump_per_pde": [
+        0.02636265754699707,
+        0.026892900466918945,
+        0.02391672134399414
+      ],
+      "indices_left": [
+        9,
+        5,
+        6,
+        10,
+        51,
+        43,
+        52,
+        44,
+        42,
+        50,
+        35,
+        59
+      ],
+      "indices_right": [
+        6,
+        10,
+        9,
+        5,
+        44,
+        52,
+        51,
+        43,
+        53,
+        45,
+        36,
+        60
+      ]
+    },
+    {
+      "epsilon": 1e-07,
+      "feature_jump_per_pde": [
+        0.026347637176513672,
+        0.02686619758605957,
+        0.023885250091552734
+      ],
+      "indices_left": [
+        9,
+        5,
+        6,
+        10,
+        51,
+        43,
+        52,
+        44,
+        42,
+        50,
+        35,
+        59
+      ],
+      "indices_right": [
+        6,
+        10,
+        9,
+        5,
+        44,
+        52,
+        51,
+        43,
+        53,
+        45,
+        36,
+        60
+      ]
+    }
+  ],
+  "interpretation": "untrained feature diagnostics only; not physical prediction errors"
+}

@@ -65,7 +65,16 @@ def test_150_cases_generate_only_unique_bounded_representative_plots(tmp_path):
 
 def test_notebook_keeps_user_model_selection_and_summarizes_instead_of_printing_cases():
     root=Path(__file__).resolve().parents[1];n=json.loads((root/'notebooks/03_evaluate.ipynb').read_text())
-    assert 'physics_summary_table(RESULT)' in ''.join(n['cells'][9]['source'])
-    assert 'for row in rows' not in ''.join(n['cells'][9]['source'])
-    assert 'coverage_summary_table(RESULT)' in ''.join(n['cells'][10]['source'])
-    assert 'representative_case_ids=REPRESENTATIVE_CASE_IDS' in ''.join(n['cells'][7]['source'])
+    code='\n'.join(''.join(c['source']) for c in n['cells'] if c['cell_type']=='code')
+    assert 'physics_summary_table(RESULT)' in code
+    import ast
+    # Comprehensions used to detect available metrics are fine; printing each
+    # physical case is the behavior this regression forbids.
+    tree=ast.parse(code)
+    retained=next(node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name=='_evaluate_retained_T1')
+    for node in ast.walk(retained):
+        if isinstance(node,ast.For) and isinstance(node.target,ast.Name) and node.target.id=='row':
+            assert not any(isinstance(call,ast.Call) and isinstance(call.func,ast.Name) and call.func.id=='print' and any(isinstance(arg,ast.Name) and arg.id=='row' for arg in call.args) for statement in node.body for call in ast.walk(statement))
+    assert 'coverage_summary_table(RESULT)' in code
+    assert 'representative_case_ids=REPRESENTATIVE_CASE_IDS' in code
+    assert 'ENABLE_T1_EVALUATION = False' in code

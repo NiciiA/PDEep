@@ -9,8 +9,11 @@ description = "Validated foundations for PDE inverse reconstruction research"
 requires-python = ">=3.10"
 dependencies = [
   "torch>=2.2", "numpy>=1.26", "scipy>=1.11", "matplotlib>=3.8",
-  "pytest>=8", "notebook>=7", "nbformat>=5.9", "nbclient>=0.9", "ipykernel>=6.29",
+  "pytest>=8", "notebook>=7", "nbformat>=5.9", "nbclient>=0.9", "ipykernel>=6.29", "ipywidgets>=8",
 ]
+
+[project.optional-dependencies]
+geometry = ["triangle>=20250106", "shapely>=2.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

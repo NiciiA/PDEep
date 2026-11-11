@@ -213,7 +213,8 @@ def test_notebook_bootstrap_exact_helper_and_safe_configuration():
     assert ast.dump(actual,include_attributes=False)==ast.dump(expected,include_attributes=False)
     assert n['cells'][2]['metadata']['jupyter']['source_hidden']
     scope={};exec(''.join(n['cells'][1]['source']),scope)
-    assert scope['REPO_URL']=='SET_YOUR_GITHUB_REPOSITORY_URL' and scope['USE_GOOGLE_DRIVE'] is True
+    # Drive is an explicit user preference; either setting is safe on local.
+    assert scope['REPO_URL']=='SET_YOUR_GITHUB_REPOSITORY_URL' and type(scope['USE_GOOGLE_DRIVE']) is bool
     assert scope['REPO_REF']=='main' and scope['LOCAL_OUTPUT_DIR']=='/content/pde-inverse-outputs'
     scope.update(IS_COLAB=False)
     # Full bootstrap cell really executes its local branch; clone/install/mount guards elsewhere above.

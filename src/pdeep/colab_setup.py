@@ -114,10 +114,11 @@ def running_in_colab(shell=None):
     return 'google.colab' in sys.modules or type(shell).__module__.startswith('google.colab')
 
 
-def install_checkout(project_dir,*,runner=None):
+def install_checkout(project_dir,*,runner=None,extras=()):
     """Use pyproject editable installation; suppress all potentially secret output."""
     import subprocess,importlib,site
     root=Path(project_dir).resolve()
+    if tuple(extras) not in {(),('geometry',)}:raise ValueError('Only the explicit geometry installation extra is supported.')
     if sys.version_info<(3,10):raise RuntimeError('Unsupported Python: PDEep requires >=3.10.')
     text=(root/'pyproject.toml').read_text()
     if 'requires-python = ">=3.10"' not in text:
@@ -126,7 +127,8 @@ def install_checkout(project_dir,*,runner=None):
         actual=Path(sys.modules['pdeep'].__file__).resolve().parents[2]
         if actual!=root:raise ValueError('Another pdeep checkout is already imported; restart the runtime before installing this checkout.')
     runner=runner or subprocess.run
-    try:result=runner([sys.executable,'-m','pip','install','-e',str(root)],capture_output=True,text=True,timeout=600)
+    target=str(root)+('[geometry]' if extras else '')
+    try:result=runner([sys.executable,'-m','pip','install','-e',target],capture_output=True,text=True,timeout=600)
     except (OSError,subprocess.TimeoutExpired):raise RuntimeError('Editable installation could not finish. Check runtime/network and Python support; raw logs suppressed.') from None
     if result.returncode:raise RuntimeError('Editable installation failed. Check pyproject/Python compatibility and dependency access; raw installer output is not logged.')
     importlib.invalidate_caches()

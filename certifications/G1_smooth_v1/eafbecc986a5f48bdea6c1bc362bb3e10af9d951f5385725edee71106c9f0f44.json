@@ -1,0 +1,602 @@
+{
+  "benchmark_id": "G1_smooth_v1",
+  "capabilities": [
+    {
+      "boundary_trace_operator": 2.63927568619443e-15,
+      "family": "square",
+      "maximum_sampled_normalized_RMSE": 9.762130314763142e-08,
+      "median_sampled_normalized_RMSE": 7.296179464234357e-08,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 9.377229532628364e-08
+    },
+    {
+      "boundary_trace_operator": 2.63927568619443e-15,
+      "family": "square",
+      "maximum_sampled_normalized_RMSE": 2.144090810543003e-05,
+      "median_sampled_normalized_RMSE": 1.6983654400501354e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 2.1009038763814988e-05
+    },
+    {
+      "boundary_trace_operator": 2.63927568619443e-15,
+      "family": "square",
+      "maximum_sampled_normalized_RMSE": 9.84020113586268e-05,
+      "median_sampled_normalized_RMSE": 4.216194318810351e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 9.209125023352225e-05
+    },
+    {
+      "boundary_trace_operator": 3.7695440124082094e-13,
+      "family": "rectangle",
+      "maximum_sampled_normalized_RMSE": 5.987270729460467e-08,
+      "median_sampled_normalized_RMSE": 4.415731516391435e-08,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 5.957845836253455e-08
+    },
+    {
+      "boundary_trace_operator": 3.7695440124082094e-13,
+      "family": "rectangle",
+      "maximum_sampled_normalized_RMSE": 1.3709207352573353e-05,
+      "median_sampled_normalized_RMSE": 9.92114168134486e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 1.3490849146163853e-05
+    },
+    {
+      "boundary_trace_operator": 3.7695440124082094e-13,
+      "family": "rectangle",
+      "maximum_sampled_normalized_RMSE": 7.641689195609276e-05,
+      "median_sampled_normalized_RMSE": 2.9435761566600928e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 6.771411077868138e-05
+    },
+    {
+      "boundary_trace_operator": 3.113146198803025e-15,
+      "family": "lshape",
+      "maximum_sampled_normalized_RMSE": 4.143950952177259e-05,
+      "median_sampled_normalized_RMSE": 1.1947027901369665e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 4.138777408367497e-05
+    },
+    {
+      "boundary_trace_operator": 3.113146198803025e-15,
+      "family": "lshape",
+      "maximum_sampled_normalized_RMSE": 3.621124947991016e-05,
+      "median_sampled_normalized_RMSE": 2.3627831225735428e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 3.5688907020463546e-05
+    },
+    {
+      "boundary_trace_operator": 3.113146198803025e-15,
+      "family": "lshape",
+      "maximum_sampled_normalized_RMSE": 0.0002123525725452395,
+      "median_sampled_normalized_RMSE": 3.385812475156288e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 0.00019408569820998067
+    },
+    {
+      "boundary_trace_operator": 3.131761424732383e-13,
+      "family": "disk",
+      "maximum_sampled_normalized_RMSE": 1.1133101646246274e-05,
+      "median_sampled_normalized_RMSE": 1.6967092633621962e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 1.08190830752575e-05
+    },
+    {
+      "boundary_trace_operator": 3.131761424732383e-13,
+      "family": "disk",
+      "maximum_sampled_normalized_RMSE": 3.30361304513716e-05,
+      "median_sampled_normalized_RMSE": 2.218629351345596e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 3.2595666300846185e-05
+    },
+    {
+      "boundary_trace_operator": 3.131761424732383e-13,
+      "family": "disk",
+      "maximum_sampled_normalized_RMSE": 0.00016544486813956783,
+      "median_sampled_normalized_RMSE": 9.003280294336273e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 0.00016359423525606767
+    },
+    {
+      "boundary_trace_operator": 3.1360679284415057e-13,
+      "family": "ellipse",
+      "maximum_sampled_normalized_RMSE": 2.821581325191166e-06,
+      "median_sampled_normalized_RMSE": 7.939668192816608e-07,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 2.5914298134176964e-06
+    },
+    {
+      "boundary_trace_operator": 3.1360679284415057e-13,
+      "family": "ellipse",
+      "maximum_sampled_normalized_RMSE": 1.1954646621382233e-05,
+      "median_sampled_normalized_RMSE": 9.179378092261423e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 1.1698445274676648e-05
+    },
+    {
+      "boundary_trace_operator": 3.1360679284415057e-13,
+      "family": "ellipse",
+      "maximum_sampled_normalized_RMSE": 5.7482452305008046e-05,
+      "median_sampled_normalized_RMSE": 3.498583041830957e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 4.6652369001085364e-05
+    },
+    {
+      "boundary_trace_operator": 1.1068847433871602e-13,
+      "family": "hole",
+      "maximum_sampled_normalized_RMSE": 6.795626860710336e-06,
+      "median_sampled_normalized_RMSE": 3.7812341122025514e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 6.6327800278523e-06
+    },
+    {
+      "boundary_trace_operator": 1.1068847433871602e-13,
+      "family": "hole",
+      "maximum_sampled_normalized_RMSE": 2.802409179610469e-05,
+      "median_sampled_normalized_RMSE": 1.64370717999501e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 2.762720100267063e-05
+    },
+    {
+      "boundary_trace_operator": 1.1068847433871602e-13,
+      "family": "hole",
+      "maximum_sampled_normalized_RMSE": 0.00012201999040666517,
+      "median_sampled_normalized_RMSE": 9.802038182428555e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 0.00010987702528324007
+    },
+    {
+      "boundary_trace_operator": 3.127962711951582e-13,
+      "family": "annulus",
+      "maximum_sampled_normalized_RMSE": 5.071397613392083e-06,
+      "median_sampled_normalized_RMSE": 1.851206298423348e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 4.368054955004406e-06
+    },
+    {
+      "boundary_trace_operator": 3.127962711951582e-13,
+      "family": "annulus",
+      "maximum_sampled_normalized_RMSE": 4.1380856270445194e-05,
+      "median_sampled_normalized_RMSE": 2.8213403129125905e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 4.055638824103395e-05
+    },
+    {
+      "boundary_trace_operator": 3.127962711951582e-13,
+      "family": "annulus",
+      "maximum_sampled_normalized_RMSE": 0.00028378425903412963,
+      "median_sampled_normalized_RMSE": 1.459588021665147e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 0.00023884414847107088
+    },
+    {
+      "boundary_trace_operator": 2.4147577875318105e-13,
+      "family": "polygon",
+      "maximum_sampled_normalized_RMSE": 1.0382073119998071e-07,
+      "median_sampled_normalized_RMSE": 8.24109850389469e-08,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "poisson",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 9.89569126353422e-08
+    },
+    {
+      "boundary_trace_operator": 2.4147577875318105e-13,
+      "family": "polygon",
+      "maximum_sampled_normalized_RMSE": 3.295618331688216e-05,
+      "median_sampled_normalized_RMSE": 2.279578231585767e-05,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "heat",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 3.281779812995302e-05
+    },
+    {
+      "boundary_trace_operator": 2.4147577875318105e-13,
+      "family": "polygon",
+      "maximum_sampled_normalized_RMSE": 0.00017743875414851016,
+      "median_sampled_normalized_RMSE": 6.124739777609366e-06,
+      "outside_points": 0,
+      "passed": true,
+      "pde": "wave",
+      "physical_cases": 4,
+      "q95_sampled_normalized_RMSE": 0.0001648843559947355
+    }
+  ],
+  "certification_id": "eafbecc986a5f48bdea6c1bc362bb3e10af9d951f5385725edee71106c9f0f44",
+  "certified_PDE_families": [
+    "poisson",
+    "heat",
+    "wave"
+  ],
+  "certified_boundary_policies": [
+    "tagged-homogeneous-Dirichlet-1"
+  ],
+  "certified_field_prior": {
+    "heat": "G1-C3-authorized-source-and-heat-extension-1",
+    "poisson": "G1-C3-authorized-source-and-heat-extension-1",
+    "wave": "G1-wave-C3-compact-Gaussian-candidate-v2"
+  },
+  "certified_geometry_families": [
+    "square",
+    "rectangle",
+    "lshape",
+    "disk",
+    "ellipse",
+    "hole",
+    "annulus",
+    "polygon"
+  ],
+  "certified_mesh_resolutions": [
+    0.02
+  ],
+  "certified_observation_policy": "area-uniform-independent-heteroscedastic-1",
+  "limits": "96 fixed physical cases;128 area points x9 times plus128 continuous-time sensors/case. Sampled convergence evidence, not a uniform bound over Gaussian tails; D0 fixed polygon instances only. Curved-domain polygon approximation is separate.",
+  "normalizers": {
+    "calibration": {
+      "cases_per_pde": 4,
+      "positions": 256,
+      "rows": [
+        {
+          "family": "square",
+          "field_ids": {
+            "f": "5c74b49c2cc3712cfbc7048c6f1cd61186fe876d15f4546da80b97c23986bd49"
+          },
+          "pde": "poisson",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "rectangle",
+          "field_ids": {
+            "f": "80f526dc4f47250c3ebdd6b8e2a2626ba1817d5ba4dc1e09e1f4d117ae75c890"
+          },
+          "pde": "poisson",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "lshape",
+          "field_ids": {
+            "f": "2d4ab4e15ecaf0756fe9607cbd3901fc40caa3128d3990783ea42d06ca0c0ced"
+          },
+          "pde": "poisson",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "disk",
+          "field_ids": {
+            "f": "f117cbf5104fce274b74f20db3fefc4f69b29946e14c2e401dc729f884b7f5fb"
+          },
+          "pde": "poisson",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "square",
+          "field_ids": {
+            "u0": "304267ad9bd0e140d403efe2180a6f64cf478351e72f6057df2575a9dadea076"
+          },
+          "pde": "heat",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "rectangle",
+          "field_ids": {
+            "u0": "db0131db9a2684e06572db8fdf9b23507c6be742115b46f9375eb696c3069904"
+          },
+          "pde": "heat",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "lshape",
+          "field_ids": {
+            "u0": "43ed02532558817432e3982103063d08882d9a9b21d743ffcc25e103b503a052"
+          },
+          "pde": "heat",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "disk",
+          "field_ids": {
+            "u0": "2a9957d75ba8f1c4a508702cbe22addb1d976b153181dcde048e4f1d3ac57e8e"
+          },
+          "pde": "heat",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "square",
+          "field_ids": {
+            "u0": "30837cd55f8b8d4d5ef5bcb6b2cb73f31eaaa184adba53587cbd848417b31e2c",
+            "v0": "666f230c1c483d0a66f910440bf36e1d21e4facd9bc285ef8801662ce55ed03b"
+          },
+          "pde": "wave",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "rectangle",
+          "field_ids": {
+            "u0": "14178a1de780692fdabafe6e5ae5005dc2851d26a7bf89f40f0695345a93e849",
+            "v0": "05fb94137a15698aa519283e26fda69e5b1d455a0472b9ecf95fc0dc82c7e28d"
+          },
+          "pde": "wave",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "lshape",
+          "field_ids": {
+            "u0": "c7ebdb72da2c90805eb35afaf0e5a7f6754de7ff5872fbfb3a6c22d5db4b4ad3",
+            "v0": "f9d2087fb7fe43b5ca9149ba346d2155f0f165f45710d0b37f79e97d22194646"
+          },
+          "pde": "wave",
+          "split": "reserved TRAIN calibration"
+        },
+        {
+          "family": "disk",
+          "field_ids": {
+            "u0": "4cfe7cc33e2c482a6c4b862fbdd50e61b666dd0b11ef9cc13b1027480fa273e3",
+            "v0": "9527e02dd5a64909398fa645ceb21938b0ff06708d7cb366b5f7a6722a0b8ed7"
+          },
+          "pde": "wave",
+          "split": "reserved TRAIN calibration"
+        }
+      ],
+      "split": "TRAIN-only reserved calibration",
+      "time_Gauss_order": 8,
+      "version": "training-only-frozen-C3-extension-RMS-1",
+      "wave_u_v": "frozen published C3 calibration; unchanged"
+    },
+    "identity": "f0aaab123453b7a27c7be42ebed1e2060ee336f95831e1ff939d26c13bc1ec79",
+    "values": {
+      "heat": {
+        "u": 0.04553447241833935,
+        "u0": 0.11031516559643656
+      },
+      "poisson": {
+        "f": 0.10367966473585083,
+        "u": 0.0013842196225971688
+      },
+      "wave": {
+        "u": 0.07565609305304831,
+        "u0": 0.10509868241799378,
+        "v": 0.9261384252564839,
+        "v0": 0.10455487373622066
+      }
+    }
+  },
+  "numerical_error_summary": {
+    "maximum": 0.00028378425903412963,
+    "threshold": 0.002
+  },
+  "pass_fail_status": "passed",
+  "reference_policy": {
+    "basis_count": 32,
+    "boundary_policy": "tagged-homogeneous-Dirichlet-1",
+    "heat_time_method": "Crank-Nicolson-C1-Hermite",
+    "observation_policy": "area-uniform-independent-heteroscedastic-1",
+    "physical_time_interval": [
+      0.0,
+      1.0
+    ],
+    "reference_degree": 4,
+    "reference_dt": 0.002,
+    "reference_h": 0.02,
+    "relative_radius": 0.18,
+    "source_quadrature": 8,
+    "spatial_interpolation": "conforming Lagrange degree4; represented polygon fixed64 facets",
+    "wave_time_method": "Gauss4-C1-Hermite-v=du_dt"
+  },
+  "reference_solver_identity": "consistent-P4-Gauss4-wave-CN-heat-elliptic-1",
+  "source_revision": {
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "shapely": "2.2.0",
+      "triangle": "20250106"
+    },
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  },
+  "splits": {
+    "benchmark_id": "G1_smooth_v1",
+    "calibration": "independent reserved calibration keys; no validation/test/held-out geometry calibration",
+    "case_key": "benchmark/PDE/physical split/index/geometry/prior; independent of propagation mesh",
+    "counts_per_PDE": {
+      "geometry_held_out": 1024,
+      "test": 1024,
+      "train": 12000,
+      "validation": 1024
+    },
+    "family_topology_transfer": "ellipse/hole/annulus/polygon; distinct from ID validation",
+    "field_rng": "unchanged C3 wave pair(split,index); separately keyed authorized Poisson/heat extension",
+    "generator_version": "G1-smooth-generator-1",
+    "geometry_held_out_instances": [
+      "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd"
+    ],
+    "identity": "591f31498da48ec9de6cd8689a9211a5323c1693a6b18bb227e903282fe601a2",
+    "instance_transfer": "e.g. rectangle1.4 is a new instance, not currently certified",
+    "mesh_transfer": "same physical ID and split; never called geometry generalization",
+    "train_geometry_instances": [
+      "c8cb17902cf6cb2e483ed5a9045619b103e9d52576e5fe39b1e7cdd578d4bdc6",
+      "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "2debf0a1ef0b9a99e4423423a239a30a0b56f7c2afc4ce407c4889591b27b0a8"
+    ],
+    "validation_test_geometry_instances": [
+      "c8cb17902cf6cb2e483ed5a9045619b103e9d52576e5fe39b1e7cdd578d4bdc6",
+      "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "2debf0a1ef0b9a99e4423423a239a30a0b56f7c2afc4ce407c4889591b27b0a8"
+    ]
+  },
+  "validation_case_ids": [
+    "37d978014585425a32d19c2a910a3dd4ecbd71d1d0916671a18fbe27a62817ce",
+    "2800a19f847bea73f366d9ba34db0056c73917c7a6fbb9f30068a00f4941c943",
+    "4747454e55d378169f801f2ef05caf3555dd26a63fa4c851339b49260a3b9de9",
+    "31cf341878ea9c758526d4cc97d64eec7fae96438007dfe039d7020c23c907e3",
+    "c7499e7d990478d06fcad6ecca6d09ccd66b533e77174389c448558cf0867830",
+    "b6af7345d6e7c7f4b1f08cd2b4774d33076223f518d114be8ea13fc8af5241af",
+    "4c5f33d789a4c79ab0a50b4b3706093ac1b77e4a3f93511f0990f1b3939b6b89",
+    "a72da02e5a70670362ddc74f043c9116eee80235f936c8831d49627021746762",
+    "5dcebd4244d3a92348a7efa23472453f2125edbfdcbb885f2bd81ea37c3c7407",
+    "8cb1336dd795f20e8806d3cd3604cba6132ca8cdaf72f96507d3754c4808db88",
+    "9ec5ae43eff1da878a31fabacf225cda0a9df6037a4da3c3afcdbb4a258ae9bb",
+    "4dc6c4f8103fd2ece92e3740f5893df50154395abea204a91666007d9f635c46",
+    "68c244ea11ced06c1e8facff476814e90091167142e21b5dcdfd759fed145308",
+    "2abbb8647bc6a957ea37134f9b035d773da951a5a6ed396d1669daf6ce7c9115",
+    "4276c3555cfdc0501bdfcb4bb8b46451c689369a4f73a3a16bbf75b122c94fea",
+    "93c6d0a18be1844aaecf33389c0aa13ed1e8aa9802a4987ce98761caf7b16430",
+    "92b5dce31868cf327f42c4272762e2dfaa7fde7e072586961f75378778841707",
+    "82c3c0f344498847aeddbb5492a3f917e6c8f13684617f4df0d4da5375a01ba7",
+    "4894aad1972b4c9883de52cfd08c7beab8502cefcf33694caf7d594855849b3b",
+    "1ce0a6846694c13161ad95292d868f07d13de16ca21bd52d085bd049623a0ad9",
+    "c0ef2836eb081b532b64826333dcb63999bb478252b5206b547004158e260163",
+    "14b1d154cccf0ea63bd9b181a1fc5758ab6f30dd73d641617d638f7dec093422",
+    "93e0de2ee76ad241ee2ba0c4da23a23b600fd9af9f99df12668ca91a52c055d8",
+    "cbb144a9226ef536dc17ae0b0af970e9cc434b1388d02bd945f3e0bdb9e3807b",
+    "e814370b531daf44e79b94f414009f0d0a9746caac91cc647dce7b806dcb1124",
+    "ae5917efcf92f98aedd042f081ad928b838d37038c4ad5e4b22d8f5a6d564a44",
+    "d09ca1085d736a944c130e14799336673e0bb4f5d98ac81e03d848e9eca209fe",
+    "7086a1680086fee8653234ebc51a02d75960e490ac161a54dfdf504f738ef8f3",
+    "d376a161cccd1ca25ea44d21ed8a81fd54f49cba8ee96e905d3abe602721e19b",
+    "91ca7c2ac3f08e57e67c49ca7e95e8a57bdcceaf902a52dc913e45688943e8e5",
+    "22914dd5ea7b7d40d0e5408d89c72cdbbc626fc40264afb3e83a1d0c0e874397",
+    "6a78fa0b5fe005ea07399565a3287b5732a7829eaa8d28b30012301fa357a190",
+    "03d08f3fe77554d94da57e0cfc010295345b7baab9d6f902c0bee5a21ad5f467",
+    "d9970fa8647a07c8a65aa448ece888062e074d40519cc9590df18e78e58d53ce",
+    "352c667c383979af076c4026aac7adf7db6bf2ea683e270eb4d56184273bbf33",
+    "242a10aae1b2059b31d930fd11fa92dec6de127418b30de7727c86e2b15006fa",
+    "821172ab36ea8e056b381cac18875ef81c555b5e9c8f9fa9cf08ae209680c87a",
+    "4a5a78e7454a76eb8fbbef20843c1aa78c8149875ce16dcd469696abe3d3ad6c",
+    "596b0512bcf1640b2da95ef59bee77af452da0ce735e1d27f27c511f35c1addb",
+    "e44fdc404fc24ceceb4b34481dc4aaaebd9cf364b0ba57dcecc8f8cd2d0cb7a9",
+    "5215df9a77f51f6cf3815af320f42002adc75b47a9551d527ff8c27b77a01d6f",
+    "e7ae0d047a51e1de8ae006e380c1712dcc3cc1d697dfbeba61841e4c8db04d9a",
+    "92b53f8bff3de6c73e47e95a2a64381e24057d7761d409e940e1576b672e6e52",
+    "58c210843db837fe7b9cc054757be1096cd6784d888a16174a6757ee1e926130",
+    "49ae3a3adce1e9b453c4d1e626cbae50fe2e8dd81a5c09ef9b487be0977b0366",
+    "f129a33aceac6800849199e37a86865189044e4689c2629fd375ca477b4779a2",
+    "2a32e833906e76e6da6d2345fa7bfcc0a8d6d1d0dd48a4b5334f04b87021c6b7",
+    "961bd3756ba74dd6e7620b56b0b57f41b814b2c63a51c4b6e27c74cdfad1c138",
+    "1ec6d0c64d310122295104189868d26e522c25215daffb7891b499cfeae750fc",
+    "104e3dd75f807676b1936c0705232376c7ef305cd5084a5fc48b95bfc093f265",
+    "320ad7466c75e0dd2569b0b53745d67d85144dbe8cb7507ef83f02354d642b9a",
+    "ce44cb99a44b2642d94f2fb85a7664f78e941164854f70080f7778614191cca7",
+    "255dc07a57d70dc37f7b7e72934a958dd1ef4fea2aa926d118b7771b1077d8bf",
+    "393ee2e1483eb1e52e637f3a8f4c19e0e7c856ce4d7e0e926f32e7c951050d17",
+    "f57970c81f9e5d26853cfa58d76641e66bd3aa0827fec466a10613fb262f8d37",
+    "ff0368b5f1abdd8418364dc517811a98a46535378ad2aec8fbeb7b2e996b8ad2",
+    "5d7d24a6ba8e83bcdee2453a1f1160507cbe6660bd88bddc62320f3a5c6f93cf",
+    "a4a53b5cf2096f9d7273d98630b12c95eac440b7173bf691afe5018c17e6e4fa",
+    "d2b98184cd8e9de45fc5d331a3615060ed6c9f022c6c0e9dfdf98840df1e640f",
+    "e49ff35aea98f47b1ea8b5b246288793dd637c2208d580e7cd41bd3713a95bd3",
+    "37ac84e4c10686f90f100559788a66f0dcff5a0211c48cdac72ad8980e2d1f15",
+    "3c0cdd010a0ceb6cb70da13db195367cbb7a4708d7ee5896e577d095e1d41b5b",
+    "7ad2be0487c3d1f7a1a62c6d8175653657257e997d3b54925a8c6cba91f628f5",
+    "a5b65fce3659fe7d677183f5d5a45edd99c99b332ef750df592c8ae8d2b1d6af",
+    "5c4c5c9531f5a8d78930e02faf5251a520e3c9d65f436b8a4e184dfe5cc02935",
+    "77d30e4eca05b4efab88dd7836f8a841ddb4782d452b86fe0d1d9e50037db617",
+    "24f9f5cdc72dc233562089619fae046f78b10d5ddb3b04abef2f3c9c271847d7",
+    "5b388f04bacc515f67c7eb3fca7329d16e07c7517993f59a9f11f9b55eba12c5",
+    "680f815668a3191d89a90ebc1eb624945bb571e1cce4ec65e7cd8536e48c1d99",
+    "4dfd344d68823e959628c4c5fb7256899c6786f0dad0d372eb30aa46bedcdf17",
+    "a7cdc5f642e3a9b4420f97c8278931a213228d886f14291e1b0ec82b46745506",
+    "995ffdef05b233355fe7e6578444feacfaa6d603e4bff95aa170a4a4dcacd9da",
+    "d4b719c7e2c26be9138d02d03fdd979f25517c36836861cc059168be86045904",
+    "460063a581e5e5cacde82178888453465cacd3e278b776af985f7dd000ff9a06",
+    "1dbfc53f369300865bdd275a288fd5d692a18fd57f736c69fb8de77aa3cc9c21",
+    "9f569a404c520cff023b1491a7eb2cb24f4953f836b82e1f370b4eb16b05245d",
+    "cedbc975fa0220b4cd5a86695e8568e1d19c4f80eebaf727f441798b2e034e9a",
+    "bc70f035ec00b0986e17ae14c9ba86b8c938eea89d1963eb3f37f74f6eeff26f",
+    "dff957b7b3d020af836bccaad04d8c24e7449a7c77ab4e3dc7dd783ba741e10a",
+    "a878967819f7ee17d58f2ff3ee3748774fd1f8908a7cc7833a69295138af0a6f",
+    "e27494c7e8c5031c66e3a142abf39c8f2b1b03a3af77cbc6a2f389b4686a59cf",
+    "b60fb572b3d95bdee457cd989d54cf5f6d37cb85dffd74e65c2539fb217475da",
+    "287b59a07b657779470533af02f3b36cacfa78ceec827a46dcb7a178ecfc6295",
+    "e2c3a98df9b5c52d18fbef9535f1310b70cadc35819dff2fa43579708d0e9544",
+    "be860e0468afa1ff3d552e19965042d233f7ca062dc6f31f42b33e9102378a0f",
+    "8a6ed0891e3c80e8f150fd0638ed57a05c2d9950ba0d8e99f505632306249a2a",
+    "0c7cceffe70a94c7e2d993525def548d4c0449e6bde25e01e860d198d5722e36",
+    "3dbae9a636be1a4af9e7f81125776ea5b3998d0a48adaf76bd3cf9b9f032aaac",
+    "8f9d226fa6a07bcbec400d3c20152fba36d0c838f059777c0e23f342bad1c735",
+    "8de11b80ee8cdb042d9b272b2add3f5b4647a2f51ca4bb96a04e9914183a7267",
+    "46412eee3a914c5c4fc01e1631243b47d64940834833f3a9194098b5729ef180",
+    "cfda8066d006be30a2de27888f6304a5a20a4d6a8277105dc3031f2797979db9",
+    "2ba3ffcc8a9a4e9743e3b88aff63c106315d08ab59e80103079f9b535090ef78",
+    "5eea5a0ca6d9ffe4368c96d46d69bf20a702163a70235cde2d836f47f75ccbc3",
+    "8a5355d2587ae3418b5e189a84d4c0bb6b4c6738719585d3fd0a45368b622247",
+    "525a963ed242b6bc41c3f5e4e30a36fbc4555c319b2142d48a14f2bfbf040332"
+  ],
+  "verification_timestamp": "2026-11-11T10:52:56.113063+00:00"
+}

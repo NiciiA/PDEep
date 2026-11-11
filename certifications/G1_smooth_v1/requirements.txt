@@ -1,0 +1,5 @@
+# Numerical reference environment; Python >=3.12. Neural CUDA Torch stays runtime-provided.
+numpy==2.5.4
+scipy==1.18.1
+triangle==20250106
+shapely==2.2.0

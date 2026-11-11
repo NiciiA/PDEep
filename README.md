@@ -1,76 +1,126 @@
 # PDE inverse reconstruction research
 
-## Quick Start
+## Current workflow: G1_smooth_v1
 
-- **Explore:** open [01_explore.ipynb](notebooks/01_explore.ipynb). Pick Poisson, heat or wave; inspect the equation, square geometry, noisy sensors and reference/reconstruction. No training.
-- **Train:** open [02_train.ipynb](notebooks/02_train.ipynb). Select model(s), device and budget in the main config; run the saved preview, then set `RUN_MODE="train"` **in the Start training cell** and execute it. The monitor and validation figures stay live.
-- **Evaluate:** open [03_evaluate.ipynb](notebooks/03_evaluate.ipynb). Supply your checkpoint/export paths; all models use the same held-out plan. No automatic smoke-model substitution or retraining.
-- **Debug:** use [pde_inverse_research.ipynb](notebooks/pde_inverse_research.ipynb) for the retained full technical/mathematical checks and detailed reports.
+`02_train.ipynb` now defaults to the separately versioned smooth geometry benchmark.
+Original rough G1 remains blocked. T1 physics, exact D, A/B0/B1/C APIs, checkpoints
+and historical results are preserved. No model is trained by notebook Run All.
+See the [smooth scientific definition](docs/scientific_contract_G1_smooth_v1.md),
+[numerical certificate](certifications/G1_smooth_v1/default.json), and generated
+`reports/smooth_finalization/report.md` for evidence and limits.
 
-A **smoke test** checks execution, not research accuracy. **Tiny overfit** checks learning capacity on easy fixed examples (technical notebook, opt-in). **Research training** learns from the declared large training distribution. **Evaluation** measures reconstruction on held-out cases. Deterministic neural estimates have no claimed Bayesian posterior uncertainty.
+- **Explore:** [01_explore.ipynb](notebooks/01_explore.ipynb) retains T1 and existing geometry diagnostics.
+- **Train manually:** [02_train.ipynb](notebooks/02_train.ipynb), independently select A_GEO or C_GEO; preview first, then click the single launch button.
+- **Evaluate:** [03_evaluate.ipynb](notebooks/03_evaluate.ipynb) retains selected T1 comparisons and adds a separate opt-in G1_smooth checkpoint section. D is not an exact geometry-field posterior.
+- **Technical archive:** [pde_inverse_research.ipynb](notebooks/pde_inverse_research.ipynb); not required for training.
 
-Minimal two-update B0 execution check:
+### Push and open directly in Colab
 
-```python
-from pdeep.notebook_workflows import initialize, prepare_training, plan_table, launch_training
-ctx = initialize(device="auto")
-plan = prepare_training(ctx, models=("B0",), preset="smoke", updates=2)
-print(plan_table(plan))
-runs = launch_training(plan, run_mode="train", notebook=True)
-```
+Review and push the complete project to a repository you control, including
+`src/pdeep/geometric/`, `src/pdeep/wave_fidelity/`, `src/pdeep/smooth/`, scientific
+contracts, notebooks, scripts/tests and **certifications/**. Numerical reports are
+local/gitignored; the small certificate and its independent-control summaries are
+portable. Do not publish credentials or local experiment payloads. No push or
+remote publication was performed for you.
 
-Minimal B1 execution check (only B1 trains):
-
-```python
-plan = prepare_training(ctx, models=("B1",), preset="smoke", updates=2)
-print(plan_table(plan))
-runs = launch_training(plan, run_mode="train", notebook=True)
-```
-
-For research set `preset="research", updates=10000`; preview first. No such run was executed for this refactor. A suite is explicit: `models=("B0","B1")`, in that order. Defaults are unchanged; advanced batch/LR overrides are optional.
-
-### Open directly from GitHub in a fresh Colab runtime
-
-Push this complete project's code, `pyproject.toml`, `src/`, `docs/`, notebooks and supporting scripts/tests to a repository you control. This workspace is not currently a Git checkout; setup does not create or publish a remote for you. Do not commit credentials, private keys or local experiment payloads. Commit the Colab setup changes before selecting that revision. Open the notebook directly, with no repeated upload:
-
-```
-https://colab.research.google.com/github/<OWNER>/<REPO>/blob/<REF>/notebooks/02_train.ipynb
-```
-
-For a new, empty remote, run these commands yourself after reviewing the files (replace `OWNER/REPO`; authenticate using your external Git helper/agent):
+For a new empty remote (replace OWNER/REPO; otherwise use your existing remote):
 
 ```bash
-git init -b main
-git add .gitignore pyproject.toml README.md src docs notebooks scripts tests
-git commit -m "Add PDE research project and Colab training workflow"
+git add .gitignore pyproject.toml README.md src docs notebooks scripts tests certifications
+git commit -m "Certify smooth geometry references and prepare manual training"
 git remote add origin https://github.com/OWNER/REPO.git
 git push -u origin main
 git rev-parse HEAD
 ```
 
-Use the printed full SHA for `REPO_REF` in your Colab session. For an existing Git remote, review and push its normal branch instead of repeating initialization. No push was performed by this implementation.
+Open directly, without uploading each time:
 
-Alternatively, Colab's **File → Open notebook → GitHub** accepts the notebook's GitHub URL. Private notebook access in Colab and private **Git clone authentication** are separate: authorize notebook access in Colab, then configure a Git credential helper or SSH agent outside the saved notebook. Use a token-free HTTPS URL or `git@HOST:OWNER/REPO.git`; never paste a token/password into `REPO_URL`, cells, shell commands, logs or checkpoints. Setup suppresses raw Git/pip output and rejects embedded URL credentials. Authentication/access failures stop with a clear error. [Colab GitHub integration](https://colab.research.google.com/github/googlecolab/colabtools/blob/main/notebooks/colab-github-demo.ipynb), [Git credential helpers](https://git-scm.com/docs/gitcredentials).
+```
+https://colab.research.google.com/github/OWNER/REPO/blob/REF/notebooks/02_train.ipynb
+```
 
-1. Choose **Runtime → Change runtime type → GPU**. Setup requires a real CUDA tensor operation to pass and will stop if CUDA is unavailable; it never silently selects CPU in Colab. Allocation depends on Colab. [Colab FAQ](https://research.google.com/colaboratory/faq.html).
-2. Run **Setup configuration**, setting `REPO_URL` to your token-free repository URL and `REPO_REF` to a full commit SHA (recommended), release tag or branch. The initial value is `main`; its resolved SHA is reported. Keep `PROJECT_DIR="/content/pde-inverse-research"` or choose another absent directory. Use the same ref in the direct-open URL where practical.
-3. Run **Automatic setup** (the following collapsed cell). It clones only an absent directory, verifies origin/ref/clean state for an existing directory, checks project structure, installs editable using `pyproject.toml`, verifies the import path, reports Python/dependencies/commit, validates CUDA, then mounts Drive if `USE_GOOGLE_DRIVE=True`. Existing changes or a different revision stop setup: commit/update manually or choose a fresh directory; no automatic reset/overwrite. Python >=3.10 is required. [Git clone](https://git-scm.com/docs/git-clone), [remote ref verification](https://git-scm.com/docs/git-ls-remote).
-4. Drive defaults to `DRIVE_ROOT="/content/drive/MyDrive/PDEInverseResearch"`. Authorize the supported mount prompt. Setup creates/writes checks for the destination and displays checkpoint locations. Mounted/writable means destination ready, **not** checkpoint-copy verified. Local CPU/MPS never imports/mounts Drive, clones or installs, regardless of the Colab settings. [Supported mount API](https://github.com/googlecolab/colabtools/blob/main/google/colab/drive.py).
-5. Under **Configure**, choose `MODELS=("B0",)` or `MODELS=("B1",)` (A/C are also supported), PDEs, `DEVICE="auto"`, preset/budget and `ACTION="fresh"`. Use `PRESET="smoke", UPDATES=2` for an execution check; research uses 10,000 updates. Keep `RUN_MODE="preview"` while running through preview and inventory. Inspect CUDA, budget, optimizer/schedule, batches, save/validation cadence and paths. No old research notebook is required.
-6. In **Start training**, uncomment/set `RUN_MODE="train"` and execute. This single explicit action launches the selected architecture. Progress/validation update live. Saved Run All performs zero optimizer updates. Advanced batch/LR overrides are in a separate optional collapsed cell.
+Or use Colab **File → Open notebook → GitHub**. Prefer the printed full commit SHA
+for both REF and notebook `REPO_REF`; the default `main` is resolved and recorded.
+Private notebook access and Git clone authentication are separate: configure an
+external Git credential helper/SSH agent. Use token-free HTTPS or `git@HOST:OWNER/REPO.git`.
+Never put tokens/passwords in repository URLs, cells, logs or checkpoints. Setup
+suppresses raw Git/pip output and refuses credential-bearing URLs.
 
-**Checkpoint locations and periodic copies:** local CPU/MPS uses `<installed project>/artifacts/training_runs/<architecture>/<run_id>/checkpoints/`. Colab uses `LOCAL_OUTPUT_DIR/training_runs/<architecture>/<run_id>/checkpoints/`, default `/content/pde-inverse-outputs/...`. `last.json` and `best_validation.json` reference immutable, checksummed manifests/payloads. The existing persistence writer commits locally first, then copies/verifies at every checkpoint cadence (`SAVE_EVERY=250` by default) and new-best validation boundary. Drive copies live under `DRIVE_ROOT/checkpoints/<run_id>/<artifact_id>/`; keep each manifest and its payload together. Every experiment manifest already records `source.git_revision` and dependency versions; Colab verifies that revision against the bootstrap SHA. Setup also records a credential-free environment report in `LOCAL_OUTPUT_DIR/setup_reports/setup.json`.
+1. Select a **GPU** Colab runtime. Run **Setup configuration**, replacing
+   `REPO_URL="SET_YOUR_GITHUB_REPOSITORY_URL"` and setting `REPO_REF` to the chosen
+   commit/tag. Set `USE_GOOGLE_DRIVE=True` for persistence (saved preference isFalse).
+2. Run **Automatic setup**, the collapsed next cell. It verifies/clones only an
+   absent checkout, checks origin/revision/clean state, installs editable with
+   geometry extras, prepares exact certified reference dependencies, validates
+   CUDA and mounts Drive if enabled. It never resets or overwrites changes.
+   The current numerical dependency lock requires Python>=3.12. If Colab already
+   imported older numerical packages, setup installs the lock and asks for one
+   runtime restart; rerun setup afterward. No training is permitted with stale modules.
+3. Run configuration and preview. The engine checks certificate/source/dependencies,
+   exact reference meshes, prior, observations and normalization. Colab never
+   silently falls back to CPU. Local CPU/MPS uses the installed project, with no
+   clone/install/Google import or Drive mount.
+4. **A tiny-overfit:** `MODELS=("A_GEO",)`, `EXPERIMENT="tiny_overfit"`,
+   `OVERFIT_UPDATES=100` (selected automatically for tiny_overfit), `ACTION="fresh"`.
+   **C tiny-overfit:** same settings with `MODELS=("C_GEO",)` and an independent run.
+5. Review preview, set `RUN_MODE="train"`, rerun configuration/preview/launch cells,
+   then **click**. Cell execution, saved modes and Run All cannot launch training.
+   Inspect actual initial/final common field errors, wave u/v separately, real
+   objective terms and gradient histories. Overfit success is pending execution;
+   it requires>=75% field-error reduction or the declared numerical floor.
+6. **1,000 A updates:** `MODELS=("A_GEO",)`, `EXPERIMENT="bounded"`, `UPDATES=1000`,
+   `SAVE_EVERY=VALIDATE_EVERY=250`. For **1,000 C updates**, select only`("C_GEO",)`
+   in a separate run.500 is also supported. Physical cases sample the full lazy12000-case/PDE train split. Each
+   case uses a declared finite point-query bank. CPU64 reference warm-up across
+   many new trajectories can take hours; previews never generate it. For an
+   explicitly labeled finite diagnostic pool, set advanced`cases_per_geometry=2`
+   (or another small count). This changes experiment scope, not the prior/reference.
 
-Local-save and Drive-sync states are reported separately. A failed copy retains the verified local artifact, leaves its path pending, and displays a prominent warning: **Colab local storage disappears with the runtime**. Future saves attempt their own copy; there is no background promise that every failed older artifact is retried. Resume from the most recent **verified Drive manifest**, which may be older than the latest local save. Inference exports/histories/plots remain local; complete Drive checkpoints embed the training state/histories and can restore/export the model. `DRIVE_ROOT/inference/` and `reports/` are prepared for explicit exports; their presence does not mean those outputs were synchronized.
+### Checkpoints, resume and evaluation
 
-### Resume and compare B0/B1
+Local: `SETUP["local_output_dir"]/G1_smooth_v1/runs/<architecture>/<run_id>/checkpoints/`.
+Colab default root is`/content/pde-inverse-outputs`; local root is the installed
+project's`artifacts/`. Every checkpoint commits and verifies locally first.
+At each save (default every250 updates and best/final boundaries), the existing
+persistence implementation optionally copies verified artifacts to
+`DRIVE_ROOT/checkpoints/<run_id>/<artifact_id>/smooth-update-XXXXXXXX.json`.
+Keep manifest and payload together. Separate local-save and Drive-sync states are
+shown; failed sync retains the valid local artifact and warns prominently because
+Colab storage is temporary. Real Drive copying is verified only when it actually
+runs on a mounted Colab Drive, not by local simulations.
 
-After a Colab disconnect, reopen the GitHub notebook, select the same repository revision, rerun the two setup cells and mount the same Drive root. Choose the same architecture. To resume, set `ACTION="resume"`, `RESUME_CHECKPOINT=".../checkpoints/last.json"` (or a verified portable/Drive manifest), keep `ADVANCED={}`, and rerun config/preview/model construction. Choose a Drive manifest under `DRIVE_ROOT/checkpoints/<run_id>/<artifact_id>/update-XXXXXXXX.json` using Colab’s Files panel or the last verified path printed during training. It shows the saved previous/remaining budget; changing fresh-setting `UPDATES` does not extend it. Launch with `RUN_MODE="resume"` (or `"train"`). For a suite provide `{"B0":path0,"B1":path1}`. Portable files are verified/staged locally; the complete existing loader restores Adam, scheduler, RNG and data order. Use the saved device (`auto` selects it); implicit CPU↔GPU training migration is not supported. A finished run does not restart from zero.
+After disconnect: reopen the same commit, rerun setup/remount Drive, choose the
+same architecture/capacity/PDE/device, set`ACTION="resume"`, select the verified
+Drive manifest in`RESUME_CHECKPOINT`, preview, choose`RUN_MODE="resume"`, then click.
+The saved optimizer moments, scheduler, RNG, data ordering and counters are restored;
+the saved budget is not silently extended. Missing point banks regenerate from
+saved deterministic recipes. Exact training resume requires the same device type,
+implementation and Torch version. Every experiment records the resolved commit
+and dependency versions. Portable CPU/MPS/CUDA **inference** is separate from exact resume.
 
-To compare B0 and B1, put their printed export or v2 checkpoint paths in `CHECKPOINTS={"B0":path0,"B1":path1}` in `03_evaluate.ipynb`, select PDEs and a common validation plan, then Run All. Defaults require completed research models. Explicit `ALLOW_PARTIAL=True` permits honest smoke/bounded diagnostics, with status/update count displayed. D's exact posterior mean is added to the same plan. Missing files fail rather than fabricating results.
+In03's **G1_smooth_v1** section, set`SMOOTH_CHECKPOINT` and
+`RUN_SMOOTH_EVALUATION=True`. Default scoring uses paired unseen cases on familiar
+instances (tiny runs score their fixed train cases). Set
+`SMOOTH_GEOMETRY_HELD_OUT=True` as a separate family/topology evaluation action.
+Tables aggregate PDE, quantity and geometry; time curves and one representative
+wave case limit plotting. Strong global second-derivative residuals are not
+claimed for the C0/H1 geometry path; valid weak/boundary/initial diagnostics are
+reported. Test cases remain untouched. Remeshing and new instances within a family
+are distinct transfer categories; unlisted instances are not certified.
 
-See [workflow refactor details](docs/adr_0012_routine_notebooks.md). The historical stage notes below remain for technical context.
+Non-optimizing verification for this phase: `python scripts/check_wave_regressions.py`
+(forbids optimizer steps and excludes tests whose purpose is stepping optimizers).
+The certified convergence evidence is already shipped;
+`python scripts/certify_smooth.py` explicitly rebuilds the bounded CPU64 numerical
+study and may take substantial time. Neither command launches neural training.
 
+The unchanged T1 training API remains`pdeep.notebook_workflows` (e.g.
+`prepare_training(ctx, models=("B0",), preset="smoke", updates=2)` followed by an
+explicit`launch_training`). B1 is selected independently with`models=("B1",)`.
+See [the retained T1 workflow notes](docs/adr_0012_routine_notebooks.md) and
+[Colab setup details](docs/adr_0013_colab_bootstrap.md). No T1 or geometry training
+was run during smooth finalization. CUDA and actual Google Drive remain unverified
+unless the corresponding native verification report exists.
 
 Analytical T1 reference physics and lazy data for Poisson, heat and wave, under the
 unchanged [scientific contract](docs/scientific_contract_v1.md), plus exact T1
@@ -660,3 +710,125 @@ It independently verifies inference exports and D in new Python processes. This 
 not a research-training run. Legacy formats keep their explicit loaders and stated
 limitations; v1 checkpoints are not silently relabeled full-RNG v2 artifacts.
 See [ADR0011](docs/adr_0011_complete_persistence.md) and `reports/latest_persistence.json`.
+
+## Historical Phase G rough-G1 implementation (its release gate remains blocked)
+
+The additive geometry implementation and independent `A_GEO` / `C_GEO` prototypes
+are in `pdeep.geometric`. T1, its original A/B0/B1/C/D identifiers, priors,
+normalizers and saved checkpoints retain their existing definitions. See
+[the geometry scientific contract](docs/scientific_contract_geometry_v1.md) and
+[the implementation map](docs/phase_G_implementation_map.md).
+
+**Do not launch research training yet.** Independent smooth manufactured-solution
+FEM checks pass, but generated wave velocity changes by16–21% of its training RMS
+between h=.04 and h=.02, exceeding the2–8% measurement-noise scale. A finer mesh
+is a comparator, not exact ground truth. Phase G stopped at this scientific gate;
+later prototype smoke checks are not full scientific acceptance. The local
+`reports/geometry_phase/phase_G_report.md` contains numerical evidence, timings,
+parameter inventories, plots, failed-gate details and the verification incident.
+Reports/checkpoints are gitignored and must be regenerated or transferred separately.
+
+Install locally using your active project environment:
+
+```bash
+python -m pip install -e ".[geometry]"
+python scripts/check_geometry_foundation.py
+python -m pytest tests/test_geometry_phase.py -q
+python scripts/check_geometry_data.py  # writes diagnostics, exits2 while G3 is blocked
+```
+
+The binary Triangle/Shapely extra performs CPU preprocessing. Neural paths use
+explicit float32 CPU/MPS/CUDA; references use CPU float64. Curved domains are
+polygon approximations with separate geometric error budgets. The topology-aware
+query path is continuous H1, not globally C1/C2; C-Geo uses element-wise weak
+integration. Strong second-derivative claims at mesh interfaces are unsupported.
+
+| Complete model | Medium (width192) | Large (width256) |
+|---|---:|---:|
+| A_GEO | 6,158,789 | 10,915,077 |
+| C_GEO | 6,455,429 | 11,441,669 |
+
+These are complete, independently instantiated models, not representation-only
+counts. The old selector is deliberately unchanged; the explicit new API is
+`pdeep.geometric.models.create`, with G1 normalizers. Both medium models received
+bounded CPU and native MPS forward/backward checks. Each received exactly five
+bounded CPU optimizer calls, including resume replay; no large model was trained.
+CUDA, actual Colab and hosted Drive have not been verified locally. Full training,
+reference/quadrature fidelity, convergence and geometry generalization remain unverified.
+
+For a Colab **preview / explicit smoke check**:
+
+1. Commit/push the source, notebooks, `pyproject.toml` and docs to your own GitHub
+   repository. Keep checkpoints out of Git. Pin a commit/tag for reproducibility.
+2. Open `https://colab.research.google.com/github/OWNER/REPO/blob/REF/notebooks/02_train.ipynb`
+   with your actual repository/ref; select a GPU runtime.
+3. In the first setup cell configure `REPO_URL`, `REPO_REF`, `ENABLE_GEOMETRY=True`,
+   and optionally `USE_GOOGLE_DRIVE=True`. Run the first two setup cells. They
+   verify checkout/revision, install `.[geometry]`, validate CUDA and optionally
+   mount Drive. Use external credential helpers/SSH for private repos; never put
+   credentials in URLs/notebooks. Local setup never clones or mounts Drive.
+4. Skip the T1 training section and go directly to **Phase G**. Choose
+   `GEO_ARCHITECTURE="A_GEO"` or `"C_GEO"`, `GEO_CAPACITY="medium"` or `"large"`.
+   Preview prints resolved counts/configuration. Saved Run All is preview only.
+5. Only an intentional `GEO_PRESET="smoke"`, `GEO_UPDATES<=3`, and
+   `GEO_RUN_MODE="train"` launches bounded engineering updates. Research presets
+   are blocked by the unresolved G3 gate. The initial LR3e-4 smoke was unstable;
+   a two-update LR1e-6 control decreased loss but is not validated full training.
+6. Checkpoints commit locally first under
+   `OUTPUT/geometry/runs/ARCH/RUN/checkpoints`. With Drive enabled, periodic
+   checksum-verified copies go under `DRIVE_ROOT/checkpoints/RUN/ARTIFACT`.
+   A failed sync retains the local artifact and displays the failure.
+7. After disconnect, rerun setup at the same commit, select a matching verified
+   geometry manifest in `GEO_RESUME_CHECKPOINT`, and set `GEO_RUN_MODE="resume"`.
+   Exact resume restores optimizer/scheduler/RNG/order/counters and the saved
+   budget; it requires compatible architecture/capacity/data/source/device. A
+   completed budget is not silently extended. No original large notebook is needed.
+
+`01_explore.ipynb` has an opt-in geometry/reference display; `03_evaluate.ipynb`
+has a separate concise G1 evaluation branch. G1 is not the nine-mode T1 problem,
+so the exact T1 Bayesian D is not silently reused as a geometry baseline.
+
+### Historical G3 follow-up: wave-reference fidelity
+
+The separate smooth finalization and current manual workflow are described at the top of this README. The following retains the original rough-G1 diagnosis and preliminary C3 evidence.
+
+See [the versioned G3 reference addendum](docs/scientific_contract_geometry_g3_reference_v2.md)
+and the local `reports/wave_fidelity_g3/report.md` for convergence plots and
+`errors-by-geometry-time.csv` for u/v errors by geometry and physical time.
+
+The fine-mesh formatter is corrected: scientific notation in Triangle's area
+switch could create a four-vertex square at h=.01. Actual maximum cell area is
+now verified. Independently assembled P1–P4 spaces, exact semidiscrete eigen/
+exponential controls, continuous-time matrix functions and a checked higher-order
+wave integrator separate spatial dispersion, time error and initial-field transfer.
+
+The original canonical-P1 field prior is unchanged and its research-training gate
+remains closed. A **different**, explicitly versioned C3 compact-field prior is
+being tested independently; it is not automatically installed as G1 data and must
+not be used to claim V1 has passed. New numerical evidence is separate from the
+historical Phase G report above. No neural architecture is changed or trained.
+
+```bash
+python scripts/check_wave_fidelity.py temporal
+python scripts/check_wave_fidelity.py analytical
+python scripts/check_wave_fidelity.py original
+python scripts/check_wave_fidelity.py correlation
+python scripts/check_wave_fidelity.py candidate  # expensive fine CPU controls; cached by configuration
+python scripts/check_wave_regressions.py        # optimizer steps forbidden
+python scripts/report_wave_fidelity.py
+```
+
+Use `--output reports/my-separate-wave-audit` to preserve a separate numerical
+experiment. Source/field/query identities accompany cached candidate results.
+Existing T1 checkpoint loaders are unchanged. For an unaffected old geometry
+checkpoint whose source fingerprint predates the formatter fix/research gate,
+`migrate_unaffected_checkpoint` in `pdeep.wave_fidelity.compatibility` creates an
+explicit new, parent-linked artifact only after verifying all saved meshes/priors
+are identical. It copies the full tensor payload unchanged. Affected fine meshes
+and unreviewed source changes are rejected; originals are never rewritten.
+
+Notebook **Run All only renders launch buttons**, even if train/resume settings
+were saved. A fresh click is required for legacy training; G1 research is also
+blocked at the engine entry point. The G3 verification executes a saved-train copy
+with engines/optimizers blocked and records zero training calls. No new unintended
+updates occurred during this follow-up.
