@@ -1,0 +1,126 @@
+{
+  "family": "annulus",
+  "meshes": {
+    "f1edd1df0389e2dc734d0a9b61cbaefaed2412e859f0b4174831367e6c4a886b": {
+      "file": "annulus-h0.01.npz",
+      "mesh_id": "dc79360e0802e1ddb44a2e1093a6de89746a99375566a025f2655a9587772a27",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.01,
+      "sha256": "f54a4cd05700df480e6b1fbc5c801632f5df9b32cc7c19961695cc96fc0743d2"
+    },
+    "705bb7317ee15fd495d2261d2c910f16c08322fa028f8fc0c24361cd36790a07": {
+      "file": "annulus-h0.02.npz",
+      "mesh_id": "c48e033c0d79e8638dc01c4a67b2f1ca376ce474c28fd03a43a646c93c6b29fc",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.02,
+      "sha256": "dfa4ef57c45c6a6e68b41929bcee3706183ae8fd39541277325da9f8b23e75dc"
+    },
+    "a25a44414cad551307da4fc36be0fa8712f7728ee4e18a5e6305e481e0e0b602": {
+      "file": "annulus-h0.04.npz",
+      "mesh_id": "1c0b7399c76bf3a9edb44df325c4424ff1120ed9811d19080645c188576262dd",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.04,
+      "sha256": "e1b453e8b41760648dac636025c2d157e6cc5188e21a76e868895d471b37415c"
+    },
+    "fc69989e503f2836786998ba45891d1cd8a5ff34594552e5416fa42187e31ffa": {
+      "file": "annulus-h0.08.npz",
+      "mesh_id": "6fea3ea433439808641b9a91ea196f145b9bcc5d955612988058ed7e1578b650",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.08,
+      "sha256": "ad0cc96c1689fe10cd46e7df3681411a254e54aef1b7e204572515551f3d6493"
+    },
+    "888aa3d09299d51b78982e4d65f1f9faa34f3ed521c9a3aafa6fe3be9e02d65d": {
+      "file": "annulus-h0.12.npz",
+      "mesh_id": "e9ed69844065a10aae9384ea1aa43490e49b27aee8189d285deef8f95bce9f04",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.12,
+      "sha256": "887f45396200ed02ec94c93d1dbf3b7f7708d09823fda963df447d675610e7a4"
+    }
+  },
+  "basis_file": "annulus-basis.npz",
+  "basis_sha256": "284299fdb159c8730e44138651b1d069b576952e5a35334254c9c1015563d9b2",
+  "reference_file": "annulus-reference.npz",
+  "reference_sha256": "da0adb5fb59657a0479bb8271b834ab41eb3b8061236a8a5ae0df3d182ee84ee",
+  "field_identities": {
+    "poisson": [
+      {
+        "f": "10875c3f8b007705d17da9351c0c2ce510b0e8ed05124a0b690e3fa3a34b8f71"
+      },
+      {
+        "f": "f1e1ef6b55460b94a9b44365c7011bb42e0663ef9053847f21ffd012f966b218"
+      },
+      {
+        "f": "06accc63551e918a17daef40361a7148f0e9c3bc8cdd2d99424891670f2a2a2b"
+      },
+      {
+        "f": "48f0763477923414616f3d017b88ce46103afb3c2a9831f84a720ab8ca2449d8"
+      }
+    ],
+    "heat": [
+      {
+        "u0": "89e06f96de2de1dae13637dc402fe07895f07512d8037aca858deb55f5f55d94"
+      },
+      {
+        "u0": "13aea5771350ba84669c1ce3ffb81113d40f6beed4f83b7e0d1aeae4d1e658ad"
+      },
+      {
+        "u0": "e353d0bc4ae8638478dac61db8dbb0950f4531b1e3fb733b9554f83cf9c00fdc"
+      },
+      {
+        "u0": "ae9aaea4c78222b1d65ec46df226d8e3b44b2870e23ce0bd1494258dd15c3439"
+      }
+    ],
+    "wave": [
+      {
+        "u0": "12ae9989fcd9a3f685028fd32b842ffb74abb92be5b8aa258a32b777cd48b50e",
+        "v0": "c558fadb3782bef3cd2ea9b4c22bf49eb5ffb45d092f220a0f8fb4c76bc41045"
+      },
+      {
+        "u0": "c66f385f12edc2092c5582f45e0144c0167a689fa867d26d588447cfaf871973",
+        "v0": "7b806f052e5e376aed6e0ec63d0c8a9525e710965cdce2591ab3398e432b5497"
+      },
+      {
+        "u0": "e86695f64494d559183f768f1fb006bfb63c50cbd262c57ad27e60af1d30ac65",
+        "v0": "5bbcf1a733d078ce2131f898c6b49451380673bb2467caef1bd78ecb9477b05e"
+      },
+      {
+        "u0": "ae972c7e6207f1e5859d68250b3705c8cece259946c62915d4f04a23db06c5de",
+        "v0": "547e08481d9414a317e97e04e4db19a0d701c9fa9d3bb97d8bf26a394b8f34a3"
+      }
+    ]
+  },
+  "files": {
+    "annulus-h0.01.npz": "f54a4cd05700df480e6b1fbc5c801632f5df9b32cc7c19961695cc96fc0743d2",
+    "annulus-h0.02.npz": "dfa4ef57c45c6a6e68b41929bcee3706183ae8fd39541277325da9f8b23e75dc",
+    "annulus-h0.04.npz": "e1b453e8b41760648dac636025c2d157e6cc5188e21a76e868895d471b37415c",
+    "annulus-h0.08.npz": "ad0cc96c1689fe10cd46e7df3681411a254e54aef1b7e204572515551f3d6493",
+    "annulus-h0.12.npz": "887f45396200ed02ec94c93d1dbf3b7f7708d09823fda963df447d675610e7a4",
+    "annulus-basis.npz": "284299fdb159c8730e44138651b1d069b576952e5a35334254c9c1015563d9b2",
+    "annulus-reference.npz": "da0adb5fb59657a0479bb8271b834ab41eb3b8061236a8a5ae0df3d182ee84ee"
+  },
+  "seconds": 53.101062958012335,
+  "parent_certification_id": "f283e4371f7209b15a01bf9a1db536dad19203664a2b989a5eff9fe45e695171",
+  "source_revision": {
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+    },
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "triangle": "20250106",
+      "shapely": "2.2.0"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  }
+}

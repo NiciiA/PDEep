@@ -1,0 +1,126 @@
+{
+  "family": "hole",
+  "meshes": {
+    "a032a35fcc7aa08331f375d9ba2e937cc80f61d076377d9d9f8d7f1adea26959": {
+      "file": "hole-h0.01.npz",
+      "mesh_id": "ab70d5ca9fd5b189dea36f870142342897ca7d1a195d4c7bc76cdc2f1b319865",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.01,
+      "sha256": "90016688fa10c0bf6cd3cd05f95a32e8a81a829ae6427b1b1a8f70d903ad1dac"
+    },
+    "9f7bf0a74ebd0467a2193747bbb45f302d455d9dd24b0e1fd18949e028fde193": {
+      "file": "hole-h0.02.npz",
+      "mesh_id": "5c24a00b1e348b8d2108033f3fe2fe20f92dac8d84b5b78375c069836c11003e",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.02,
+      "sha256": "048d2efd00c04dc8634a8e4d94bb7253f98d56eb28daeddc8e9e97093fa9936f"
+    },
+    "daefadf2180df719208d60c2a0dcc1ba2afcc5c4ec7bffaddb6bdc4bb3222104": {
+      "file": "hole-h0.04.npz",
+      "mesh_id": "e088c5180885bd63310afab033058623c29c11759381a95c3c5aec0d16e9ddf6",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.04,
+      "sha256": "879e0fff5b3448020ff2fad57618b1bf270b55c4be86ed989e3e3ee4d8f3def5"
+    },
+    "7bded6ea151d91b713e83d65e7f9a0731f82a5585591cb4673ec6c0dc14743a3": {
+      "file": "hole-h0.08.npz",
+      "mesh_id": "c247e83842f8b78cd8595a4511b081c6ba06ee728ca8c214c30191982355527c",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.08,
+      "sha256": "53f6d7aba4e820f504ecbd8d4e68cc92b1d20cd67af626548e4ecdd839237ea4"
+    },
+    "b7896570db2f54bec0c733052fa2cba32d105fb69fbb19b7c07d9db329cac453": {
+      "file": "hole-h0.12.npz",
+      "mesh_id": "9b6b2bbd07f22f921b5c565c6942314c55ac1c0d4ba916c0dc6d798622d19236",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.12,
+      "sha256": "5843634eec1f9ac3bae1a295eea9e1ac4173a05fdad76131edbf7ff0f539f178"
+    }
+  },
+  "basis_file": "hole-basis.npz",
+  "basis_sha256": "30e27600a18420d34110d0a620543d1070967be4b60920244ca10c48cbd55760",
+  "reference_file": "hole-reference.npz",
+  "reference_sha256": "0abc8ef9d8374a259df240b50a20ee833de0139d3b1c879df3d835c14a6e7e26",
+  "field_identities": {
+    "poisson": [
+      {
+        "f": "bc3ad08808ee65b001e8f9857ca56ef0177a3a479f2441bbb4a9ea19658e609e"
+      },
+      {
+        "f": "9ea5bba5f792a203f9a7be11b35fcf23cf0d383989fb9840aac1e75fab173ed5"
+      },
+      {
+        "f": "9962114b301bc05e82a7bd8717436ed7e49ac5fcadc68d089fa52f03810fb048"
+      },
+      {
+        "f": "6b3f9c4774723470f843f87f39234eb11acb0c283c08a41a77131838dfd57e7f"
+      }
+    ],
+    "heat": [
+      {
+        "u0": "ee6c12a557723159a5150c868a8230b68363dab2f1a446e9749832efaa7978ce"
+      },
+      {
+        "u0": "ef1b50fc44f90ff17c855ca0f76ffe8feae2783af28aa2660ebad26d02c0d9b1"
+      },
+      {
+        "u0": "f0c5d0182409fe5e9ef1f021e8b4a3cd6c0c81809b3af93cdf04928972886cd5"
+      },
+      {
+        "u0": "cbb8d4244bab85de8a7d807f6141ea8a553e5ad8635154fd822a94f6a2506d95"
+      }
+    ],
+    "wave": [
+      {
+        "u0": "2b53522345f9e5ae317af27a4308982f5d4d9d198cd674b975245ca249da53c6",
+        "v0": "4c751d76f1488780af683f883020a3ffe7db19c2f3e11cfa4cbf8c572268a5c4"
+      },
+      {
+        "u0": "2831db22d47ba817410e9eba146e0a84d68c9a95df5b0758829e8043c5b5b9b8",
+        "v0": "f59a4a5d12a62c0193e0606bef508f511aca3048747c32b6b28654af58592a67"
+      },
+      {
+        "u0": "4def5b64985671f3c56d6f7ebe153a02bcaacd73a26a80c74029f624cd6f2717",
+        "v0": "ebddb3780a7ca0a227118473904d68dca25af70b50aba90ca31d02a58e0cc980"
+      },
+      {
+        "u0": "95bb74f33667ba7b68172692d6799c7d1dfa41bee5a10233496351307523b133",
+        "v0": "de46c06b0c35ea1841f3a0715a3c854b6f93372970c73bad915cbea9cd632857"
+      }
+    ]
+  },
+  "files": {
+    "hole-h0.01.npz": "90016688fa10c0bf6cd3cd05f95a32e8a81a829ae6427b1b1a8f70d903ad1dac",
+    "hole-h0.02.npz": "048d2efd00c04dc8634a8e4d94bb7253f98d56eb28daeddc8e9e97093fa9936f",
+    "hole-h0.04.npz": "879e0fff5b3448020ff2fad57618b1bf270b55c4be86ed989e3e3ee4d8f3def5",
+    "hole-h0.08.npz": "53f6d7aba4e820f504ecbd8d4e68cc92b1d20cd67af626548e4ecdd839237ea4",
+    "hole-h0.12.npz": "5843634eec1f9ac3bae1a295eea9e1ac4173a05fdad76131edbf7ff0f539f178",
+    "hole-basis.npz": "30e27600a18420d34110d0a620543d1070967be4b60920244ca10c48cbd55760",
+    "hole-reference.npz": "0abc8ef9d8374a259df240b50a20ee833de0139d3b1c879df3d835c14a6e7e26"
+  },
+  "seconds": 77.18067566701211,
+  "parent_certification_id": "f283e4371f7209b15a01bf9a1db536dad19203664a2b989a5eff9fe45e695171",
+  "source_revision": {
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+    },
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "triangle": "20250106",
+      "shapely": "2.2.0"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  }
+}

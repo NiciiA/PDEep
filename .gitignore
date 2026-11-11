@@ -10,3 +10,4 @@ reports/*.executed.ipynb
 
 /artifacts
 /reports
+.pdeep-editable-setup.json

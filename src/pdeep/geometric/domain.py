@@ -224,7 +224,11 @@ class GeometryDomain:
         require(mesh.mesh_id==str(a['mesh_id']),'mesh identity mismatch');return mesh
 
 
-def mesh_shape(shape,h=.1):
+def mesh_shape(shape,h=.1,*,portable=True):
+    if portable:
+        from .portable import stored_mesh
+        frozen=stored_mesh(shape,h)
+        if frozen is not None:return frozen
     require(h>0,'positive target mesh length required');shapely,triangle=dependencies();poly=shape.polygon
     vertices=[];segments=[];holes=[]
     for ring in (shape.outer,*shape.holes):

@@ -1,0 +1,126 @@
+{
+  "family": "polygon",
+  "meshes": {
+    "ed5c21de604fbaa690a01bfe5c091142a8dd59724734d56252b39f41568eaa8a": {
+      "file": "polygon-h0.01.npz",
+      "mesh_id": "881f5c75ae185a95dd7f5e57c292372e743b96bd53250aac8b76c22862c2cef5",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.01,
+      "sha256": "954367d0da516e08da475cfe152f59ac7238076049eac8421d08891f90f1a8de"
+    },
+    "ad28612bff8044e2721060fe7c77388c6dcb8421e2f022a1312088f54151ddf5": {
+      "file": "polygon-h0.02.npz",
+      "mesh_id": "cf50217ace4b3fa7b8ec5b7b6f1313b1dc8f923932c0660e833ae10b15f18c1f",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.02,
+      "sha256": "c168591562fe9bbe73700bb1cc82a2dee27c71ea79a1bdfaf949f446f5a70854"
+    },
+    "b583001f68a60a950d91ed4f89674a66302aadfff9d8400664d68df46bfcc6f8": {
+      "file": "polygon-h0.04.npz",
+      "mesh_id": "3d72d3982fb711fa83933f1dcbb11df805dc8809537209ca43249e7194077d4e",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.04,
+      "sha256": "024e495adfe0f59fa6a100a14c9f00456c62cc54aa9d8ad58ff9a24f2eef4cfa"
+    },
+    "a607e1ba83a948810418ad280b4f85c793776e393e79281813835b517ae15852": {
+      "file": "polygon-h0.08.npz",
+      "mesh_id": "6a2a13f2f3dfa9550b0c1b83cb0860dc4ec06c8970bffbc0ad363e78324efadf",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.08,
+      "sha256": "020bb39923bd1b97fda8eb9b78291d7a3b72a66caa0e3bcba6137a4d0cc9fbf8"
+    },
+    "af37a7a307320d7a05d4cf5d325f94f40f042444dccf2fa13bf24622259f9a79": {
+      "file": "polygon-h0.12.npz",
+      "mesh_id": "6cf2dca1227dcfe559d5b7e6a43174149a685b963164cf9b4e4aff5614a136a5",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.12,
+      "sha256": "8e3272fb2e9912a109c68008f433f375517d8692406c540d2135dbf5b90f4637"
+    }
+  },
+  "basis_file": "polygon-basis.npz",
+  "basis_sha256": "786495e07c71ebb6a2079ede9576ab66d7a9b65d77be9d9ad1c58569ca4bb2ae",
+  "reference_file": "polygon-reference.npz",
+  "reference_sha256": "e2b8c1537af778fc03c468cae000fcdde58ae3c3f10d66d0d71f97c20d1763a7",
+  "field_identities": {
+    "poisson": [
+      {
+        "f": "0cb3dfa96afdf89e01e652c48c3adc5da41de3b6ee08c0102f81bd84d4912c6b"
+      },
+      {
+        "f": "70277f47f9e0e40a85ab887d0deefc64596e9f66dfc4ff3df62a23e671e59cd0"
+      },
+      {
+        "f": "08ac8cb97f8d7c44d666db4b51bc1f37931b92ce2fe6d15c2fb1cb830eb449c9"
+      },
+      {
+        "f": "274aac0f582ef236f5eca9c99f0e0b4fcd1c524301108c939ad1581b4c5a0943"
+      }
+    ],
+    "heat": [
+      {
+        "u0": "4d19abfe3f5b082b8273313f2b394c13c1f86ad19fced341eb41eb924b8ac9e7"
+      },
+      {
+        "u0": "dc3324731f8fb5128f53b7725f8589e3cedf6d6c7830f84328ea4bc3dc874b55"
+      },
+      {
+        "u0": "9f024492edd7a978af3e4b06fc78bccbbb9f4f8eb45e06c2339b913b7a04164d"
+      },
+      {
+        "u0": "d3d83c6318282a5fe28dee3e9c0819887639b976f3b634c6671d2ec450354c49"
+      }
+    ],
+    "wave": [
+      {
+        "u0": "cd75dc58c05aaa0a23c0d3dd9a82d5979a3d91ee31c6a7ccd4134cdf4dea02b7",
+        "v0": "5a4d90aa402e6f19c5c1935470a2f1693a75b3c2feabff27e4c29eec6ea4ad49"
+      },
+      {
+        "u0": "1ab4e23dbdc27a013434870cc7f1f24ba17032df525e62955fab6d2d65c0a54f",
+        "v0": "3279811db12bedf861f6f062041bddf16d585fa0e840f2cc768aa7767938b939"
+      },
+      {
+        "u0": "f531fae26ed750b207dcbb9fa2f0b8f0474dfdc541f9670f9b5a4baa7b7dfb85",
+        "v0": "0af22bc962b1e82337866a331c8eb08000deeb6c65978872721522c89566691b"
+      },
+      {
+        "u0": "63b334d6a59973a475b1f0deba195ace83c2b9e84c213549c3175f79c9be5b61",
+        "v0": "e74d72cc6a4803a554ad173c5374c505658b01d84423a5e5ec32b861ae41fa07"
+      }
+    ]
+  },
+  "files": {
+    "polygon-h0.01.npz": "954367d0da516e08da475cfe152f59ac7238076049eac8421d08891f90f1a8de",
+    "polygon-h0.02.npz": "c168591562fe9bbe73700bb1cc82a2dee27c71ea79a1bdfaf949f446f5a70854",
+    "polygon-h0.04.npz": "024e495adfe0f59fa6a100a14c9f00456c62cc54aa9d8ad58ff9a24f2eef4cfa",
+    "polygon-h0.08.npz": "020bb39923bd1b97fda8eb9b78291d7a3b72a66caa0e3bcba6137a4d0cc9fbf8",
+    "polygon-h0.12.npz": "8e3272fb2e9912a109c68008f433f375517d8692406c540d2135dbf5b90f4637",
+    "polygon-basis.npz": "786495e07c71ebb6a2079ede9576ab66d7a9b65d77be9d9ad1c58569ca4bb2ae",
+    "polygon-reference.npz": "e2b8c1537af778fc03c468cae000fcdde58ae3c3f10d66d0d71f97c20d1763a7"
+  },
+  "seconds": 82.31713987502735,
+  "parent_certification_id": "f283e4371f7209b15a01bf9a1db536dad19203664a2b989a5eff9fe45e695171",
+  "source_revision": {
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+    },
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "triangle": "20250106",
+      "shapely": "2.2.0"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  }
+}

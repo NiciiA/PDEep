@@ -51,7 +51,7 @@ def test_notebook_source_identity_ignores_execution_outputs(tmp_path):
 
 
 def test_routine_notebooks_safe_short_and_independent():
-    for name,expected in (("01_explore.ipynb",13),("02_train.ipynb",11),("03_evaluate.ipynb",9)):
+    for name,expected in (("01_explore.ipynb",14),("02_train.ipynb",13),("03_evaluate.ipynb",9)):
         nb=json.loads((ROOT/"notebooks"/name).read_text())
         # Preserve the compact T1 path, with a bounded opt-in G1 addition.
         assert len([c for c in nb['cells'] if not c.get('metadata',{}).get('phase_G')])==expected
@@ -60,7 +60,16 @@ def test_routine_notebooks_safe_short_and_independent():
         assert "PROJECT_DIR" in sources
         if name!="02_train.ipynb":assert "initialize(" in sources
         assert "notebooks/pde_inverse_research" not in sources
-        assert all("implemented" in c.get("metadata",{}).get("tags",[]) for c in nb["cells"] if c["cell_type"]=="code")
+        for cell in (c for c in nb['cells'] if c['cell_type']=='code'):
+            if 'implemented' not in cell.get('metadata',{}).get('tags',[]):
+                # The preexisting user-added geometry exploration cell is not
+                # tagged. Keep it intact and verify its non-training behavior.
+                source=''.join(cell['source'])
+                assert name=='01_explore.ipynb' and 'EXPLORE_GEOMETRY = ' in source
+                for call in ast.walk(ast.parse(source)):
+                    if isinstance(call,ast.Call):
+                        name_called=call.func.id if isinstance(call.func,ast.Name) else call.func.attr if isinstance(call.func,ast.Attribute) else ''
+                        assert name_called not in {'Engine','run','update','step'}
         if name=="02_train.ipynb":
             assert 'RUN_MODE = "preview"' in sources
             modes=[node.value for node in ast.parse(sources).body if isinstance(node,ast.Assign)

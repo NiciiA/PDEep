@@ -25,7 +25,8 @@ def prepare(*,models=('A_GEO',),benchmark=BENCHMARK_ID,capacity='medium',pdes=PD
     require(models and len(set(models))==len(models) and set(models)<={'A_GEO','C_GEO'},'select independent A_GEO and/or C_GEO')
     require(benchmark==BENCHMARK_ID,'G1 rough remains blocked; select the separately versioned G1_smooth_v1')
     require(action in {'fresh','resume'},'ACTION must be fresh or resume')
-    certificate=load_record(certificate_path);authorize(certificate,benchmark=benchmark,pdes=pdes,families=SEEN)
+    from .qualification import ensure_compatible_certificate
+    certificate,_=ensure_compatible_certificate(path=certificate_path);authorize(certificate,benchmark=benchmark,pdes=pdes,families=SEEN)
     configs=[];paths=[]
     run_name=run_name or 'manual-'+time.strftime('%Y%m%d-%H%M%S')
     for name in models:
@@ -36,7 +37,9 @@ def prepare(*,models=('A_GEO',),benchmark=BENCHMARK_ID,capacity='medium',pdes=PD
             require(r.get('benchmark')==BENCHMARK_ID,'checkpoint benchmark mismatch; no old G1/T1 reinterpretation')
             kwargs=r['config'];kwargs={**kwargs,**{k:tuple(kwargs[k]) for k in ('pdes','probabilities','training_families')}};c=Config(**kwargs)
             require(c.capacity==capacity and tuple(c.pdes)==tuple(pdes) and c.device==select_device(device),'resume architecture/capacity/PDE/device configuration mismatch; select saved configuration')
-            require(r['certificate']['certification_id']==certificate['certification_id'],'resume selected a different certification record')
+            from .compatibility import execution_certificate
+            compatible=execution_certificate(r.get('execution_qualification',r['certificate']))
+            require(compatible['source_revision']==certificate['source_revision'],'resume selected an incompatible numerical environment')
         else:
             tiny=experiment=='tiny_overfit';families=('square','rectangle') if tiny else SEEN
             opts=dict(architecture=name,capacity=capacity,pdes=tuple(pdes),probabilities=tuple(1/len(pdes) for _ in pdes),device=device,preset=experiment,updates=updates,checkpoint_every=save_every,validation_every=validate_every,training_families=families,cases_per_geometry=1 if tiny else None,run_tag=run_name)
@@ -83,12 +86,15 @@ def evaluate_checkpoint(path,output_dir,*,geometry_held_out=False,device=None,di
     from .training import SCHEMA,implementation_identity
     metadata,payload=read_payload(path,kind='training_checkpoint',required=('model','model_config','normalizers','training_state'))
     require(metadata.get('scientific_schema')==SCHEMA,'select a G1_smooth_v1 training checkpoint')
-    require(metadata['implementation_identity']==implementation_identity(),'model/loss implementation changed; compatible inference loader required')
+    from .compatibility import approved_predecessor
+    require(approved_predecessor(metadata['implementation_identity']),'model/loss implementation changed; compatible inference loader required')
     cfg=metadata['config'];cfg={**cfg,**{k:tuple(cfg[k]) for k in ('pdes','probabilities','training_families')}}
     original_device=cfg['device'];cfg['device']=select_device('auto' if device is None else device)
     config=Config(**cfg);n=normalizers(metadata['certificate'])
     model=GeometryModel(ModelConfig(**payload['model_config']),n).to(config.device);model.load_state_dict(payload['model'],strict=True)
-    engine=EvaluationEngine(config,Path(output_dir)/'smooth_evaluation'/metadata['artifact_id'],certificate=metadata['certificate'],model=model,allow_existing_run=True)
+    from .qualification import ensure_compatible_certificate
+    qualified,_=ensure_compatible_certificate()
+    engine=EvaluationEngine(config,Path(output_dir)/'smooth_evaluation'/metadata['artifact_id'],certificate=metadata['certificate'],execution_certificate=qualified,model=model,allow_existing_run=True)
     engine.state.successful=payload['training_state']['successful']
     report=engine.validate(geometry_held_out=geometry_held_out,diagnostics=diagnostics)
     atomic_json(engine.run_dir/('evaluation-held-out.json' if geometry_held_out else 'evaluation-seen.json'),{**asdict(report),'checkpoint_manifest':str(path),'saved_device':original_device,'inference_device':config.device,'portable_inference':original_device!=config.device,'exact_training_resume':False})

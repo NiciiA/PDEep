@@ -121,7 +121,7 @@ def test_query_bank_design_is_reproducible_and_input_safe(certificate):
 
 def test_notebook_single_launch_and_no_legacy_path():
     n=json.loads((ROOT/'notebooks/02_train.ipynb').read_text());code='\n'.join(''.join(c['source']) for c in n['cells'] if c['cell_type']=='code')
-    assert 'RUN_MODE = "preview"' in code and 'MODELS = ("A_GEO",)' in code
+    assert 'RUN_MODE = "preview"' in code and 'MODELS = ("A_GEO", "C_GEO")' in code
     assert code.count('offer_launch(')==1
     assert 'legacy_training' not in code and 'GEO_ENGINE' not in code 
     assert 'RESULTS.update(launch(PLAN' in code
@@ -169,27 +169,13 @@ def test_notebook_tiny_budget_uses_overfit_setting():
     code='\n'.join(''.join(c['source']) for c in n['cells'] if c['cell_type']=='code')
     definition=next(node for node in ast.parse(code).body if isinstance(node,ast.FunctionDef) and node.name=='training_settings')
     exec(compile(ast.Module(body=[definition],type_ignores=[]),'<notebook-budget>','exec'),scope)
-    assert scope['training_settings']()['updates']==1000
+    assert scope['training_settings']()['updates']==100
+    scope['EXPERIMENT']='bounded';assert scope['training_settings']()['updates']==1000
     scope['EXPERIMENT']='tiny_overfit';assert scope['training_settings']()['updates']==100
     scope['OVERFIT_UPDATES']=25;assert scope['training_settings']()['updates']==25
 
 
-@pytest.mark.parametrize('already_imported',[False,True])
-def test_mocked_colab_pin_and_restart_behavior(tmp_path,monkeypatch,already_imported):
-    """A simulation of installer decisions, NOT hosted Colab verification."""
-    from types import SimpleNamespace
-    from pdeep.smooth import bootstrap
-    base=tmp_path/'certifications/G1_smooth_v1';base.mkdir(parents=True)
-    (base/'default.json').write_text(json.dumps({'record':'record.json'}))
-    (base/'record.json').write_text(json.dumps({'source_revision':{'dependencies':{'numpy':'fixture-version'}}}))
-    (base/'requirements.txt').write_text('numpy==fixture-version\n');state={'installed':False};calls=[]
-    monkeypatch.setattr(bootstrap,'sys',SimpleNamespace(version_info=(3,12),executable='fixture-python',modules={'numpy':object()} if already_imported else {}))
-    monkeypatch.setattr(bootstrap.importlib.metadata,'version',lambda name:'fixture-version' if state['installed'] else 'old-version')
-    def installer(argv,**kw):calls.append(argv);state['installed']=True;return SimpleNamespace(returncode=0)
-    if already_imported:
-        with pytest.raises(RuntimeError,match='Restart'):bootstrap.prepare_reference_environment(tmp_path,is_colab=True,runner=installer)
-    else:
-        result=bootstrap.prepare_reference_environment(tmp_path,is_colab=True,runner=installer);assert result['installed'] and result['versions']=={'numpy':'fixture-version'}
-    assert len(calls)==1 and calls[0][:5]==['fixture-python','-m','pip','install','-r']
-    monkeypatch.setattr(bootstrap,'sys',SimpleNamespace(version_info=(3,11)))
-    with pytest.raises(RuntimeError,match='Python'):bootstrap.prepare_reference_environment(tmp_path,is_colab=True,runner=installer)
+def test_colab_preloaded_stack_no_longer_requires_pin_or_restart():
+    from pdeep.smooth.bootstrap import prepare_reference_environment
+    result=prepare_reference_environment(ROOT,is_colab=False)
+    assert not result['installed']

@@ -1,0 +1,126 @@
+{
+  "family": "rectangle",
+  "meshes": {
+    "8752cade95c1c1dead141880388c882a8775f2a5923dce33e45982e827475710": {
+      "file": "rectangle-h0.01.npz",
+      "mesh_id": "3b4e05a3fe0ecaf6e402c68c45e83422f7f5fbd11a1fcad44f1a49b91cf619d5",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.01,
+      "sha256": "d687a29fe19c48c9c3b29dab2978c3b37c1e6c21b48db92ed1423b0069d4cd48"
+    },
+    "cf4a5770a44e847c0867b2e9ffcadf72fbd3302f899201125f5d467a3cb61f13": {
+      "file": "rectangle-h0.02.npz",
+      "mesh_id": "26f05bdb7a70170f5c9acc4ea5f1e6e485212e78878005c8cde43cbacf2a6440",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.02,
+      "sha256": "16dc57f72c5e95819e33562d912c3d08a8ed90a155df35a990481803191793ec"
+    },
+    "9280c9fefbec6534fe00caf2e17c1aeb302057fd5bd8267c5797b751a6bbf0df": {
+      "file": "rectangle-h0.04.npz",
+      "mesh_id": "8e0e14e8dfbde75f74d19ef3a12a1e64cb752fec4212a3fa278e16311eefeb7a",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.04,
+      "sha256": "19b48e99bcec6ed0f77e35f0f4eefb8c9efa95808cc4f6f9ee59cd75e80f2328"
+    },
+    "5dc3cd2c81f0060020653b20467dacef6991d53649eaffedfd52ed51f22d8842": {
+      "file": "rectangle-h0.08.npz",
+      "mesh_id": "da3d5623b5a963f42b85a972d622f72a0eace6fd040b0efdf5bcd9cbd069d7ec",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.08,
+      "sha256": "ba539d8623c5e43ecbc483605965896c9049e1f4014a518ac7d801b9c7a73125"
+    },
+    "5f6316c4267c752c74582f3ab11984d81a90c4341b2b79be480b325566625163": {
+      "file": "rectangle-h0.12.npz",
+      "mesh_id": "b43603ac7599d05fa9e0b010adfd662d62657b33893944b1bf3a52bd8ae70bf7",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.12,
+      "sha256": "f3e50342242e2c9ad4ccf8d8cf93c07599602c12af6b68813169b150c343ec66"
+    }
+  },
+  "basis_file": "rectangle-basis.npz",
+  "basis_sha256": "6ae02d7c7df1eb1ae30b469813741ed38aa0d622559e6fd482e18e2cd8604b3b",
+  "reference_file": "rectangle-reference.npz",
+  "reference_sha256": "1a79dbdef63c2149570afb308bfb822ceb5534a19bc1b71b5791e69f00ef0581",
+  "field_identities": {
+    "poisson": [
+      {
+        "f": "6d68fece8337e668ef2df3d3c2d061706b68a1289cc3acc2b7f907b13b92bd52"
+      },
+      {
+        "f": "6aa763d87ab945434f7940966071279ce33b932a64aa119772655178d68494f5"
+      },
+      {
+        "f": "03f2d7e5c41b066af14e87e107509fa21b6a1cb2ff4f9d45e601e5c604f60d4d"
+      },
+      {
+        "f": "aed74c122f77ae38c4b6d90a3c0c4dde0c9a41940020e2d0ce32387b313ec933"
+      }
+    ],
+    "heat": [
+      {
+        "u0": "141ef6c827c437be6893b0e0e35af6d205d29510275de3a361e2d6a2011230b1"
+      },
+      {
+        "u0": "f6f7c7626293d64f7ff87d38c8008ee7ff8b08db79f42ba0ff4d297258db2277"
+      },
+      {
+        "u0": "af0fecafdda191528cf38ab55844aab7a07f0adf4c6a395a7c5bb4751167f7e9"
+      },
+      {
+        "u0": "cb6489b495184242340e3e5d3f84734634598c99a0ab94fae0ce945d434b3b6f"
+      }
+    ],
+    "wave": [
+      {
+        "u0": "b3661d03d581eba1cf5ff9fd0ed2e837e4eb5a8b25e3e0d2015c1cbf3bf856ca",
+        "v0": "e6d7fcb65e3e63ac83028ef90c74f65091e5c4b658e26943d93509b327b1d617"
+      },
+      {
+        "u0": "0a506975deefb7bef9acda158cce893b2953464f355d463b17a471e40bca01d9",
+        "v0": "081a6fbbd7ef561fb3f29534ccde18fc828750c79810fbf9b684dc1959ca2668"
+      },
+      {
+        "u0": "6b7a1cd66ff5db1488088d4e3be4ba92df458298dfee09ed4d5057e1599a1d6f",
+        "v0": "84c4d293da5d64d616e7e60a081ede03e37620ecc94ef1ad8ded133ce74b8315"
+      },
+      {
+        "u0": "f61ee065f4e23abf85c543ef70def6cd2f547c0d319833058c4ad31badfc4b27",
+        "v0": "a261bdfcdcf47ef23a15b756e745b6c4344e374ee26598734e27accf0d3ae5a1"
+      }
+    ]
+  },
+  "files": {
+    "rectangle-h0.01.npz": "d687a29fe19c48c9c3b29dab2978c3b37c1e6c21b48db92ed1423b0069d4cd48",
+    "rectangle-h0.02.npz": "16dc57f72c5e95819e33562d912c3d08a8ed90a155df35a990481803191793ec",
+    "rectangle-h0.04.npz": "19b48e99bcec6ed0f77e35f0f4eefb8c9efa95808cc4f6f9ee59cd75e80f2328",
+    "rectangle-h0.08.npz": "ba539d8623c5e43ecbc483605965896c9049e1f4014a518ac7d801b9c7a73125",
+    "rectangle-h0.12.npz": "f3e50342242e2c9ad4ccf8d8cf93c07599602c12af6b68813169b150c343ec66",
+    "rectangle-basis.npz": "6ae02d7c7df1eb1ae30b469813741ed38aa0d622559e6fd482e18e2cd8604b3b",
+    "rectangle-reference.npz": "1a79dbdef63c2149570afb308bfb822ceb5534a19bc1b71b5791e69f00ef0581"
+  },
+  "seconds": 121.23235312500037,
+  "parent_certification_id": "f283e4371f7209b15a01bf9a1db536dad19203664a2b989a5eff9fe45e695171",
+  "source_revision": {
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+    },
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "triangle": "20250106",
+      "shapely": "2.2.0"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  }
+}

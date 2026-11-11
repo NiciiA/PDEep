@@ -13,6 +13,7 @@ from pdeep.core import digest
 from pdeep.smooth.definition import *
 from pdeep.smooth.data import calibrate,Normalizers
 from pdeep.smooth.reference import Reference
+from pdeep.smooth.resolution import resolve_reference
 from pdeep.smooth.certification import save_record,THRESHOLD,additional_sources
 from pdeep.geometric.quadrature import boundary
 
@@ -36,7 +37,8 @@ def main():
         xx=np.concatenate([np.tile(x,(len(TIMES),1)),sensors]);tt=np.concatenate([np.repeat(TIMES,len(x)),sensor_t]);cut=len(x)*len(TIMES)
         runs={};meshes={};boundaries=[]
         # Different degree/mesh comparator independently limits spatial error.
-        for tag,h,degree,dt in [('h04',.04,4,.002),('production',.02,4,.002),('temporal_coarse',.02,4,.004),('temporal_fine',.02,4,.001),('independent',.01,3,.001)]:
+        _,resolved,_=resolve_reference(family,policy=POLICY)
+        for tag,h,degree,dt in [('h04',2*resolved.h,resolved.degree,resolved.dt),('production',resolved.h,resolved.degree,resolved.dt),('temporal_coarse',resolved.h,resolved.degree,2*resolved.dt),('temporal_fine',resolved.h,resolved.degree,resolved.dt/2),('independent',resolved.h/2,3,resolved.dt/2)]:
             print(f'{family} {tag}',flush=True)
             r=Reference(family,h,degree);meshes[tag]=r.mesh_report();runs[tag]={}
             b=boundary(r.space.mesh,4);B=r.space.sample_operator(b.position)
@@ -95,7 +97,7 @@ def main():
             bc=max(b['max_Dirichlet_trace_operator'] for b in f['boundaries']);outside=max(b['outside_points'] for b in f['boundaries'])
             capabilities.append({'pde':pde,'family':f['family'],'physical_cases':4,'maximum_sampled_normalized_RMSE':max(errors),'median_sampled_normalized_RMSE':float(np.median(errors)),'q95_sampled_normalized_RMSE':float(np.quantile(errors,.95)),
                                  'passed':max(errors)<=THRESHOLD and bc<1e-8 and outside==0,'boundary_trace_operator':bc,'outside_points':outside})
-    body={'certification_schema':'G1_smooth-numerical-certification-v1','benchmark_id':BENCHMARK_ID,'certified_PDE_families':sorted({c['pde'] for c in capabilities if c['passed']}),'certified_geometry_families':sorted({c['family'] for c in capabilities if c['passed']}),'certified_mesh_resolutions':[.02],
+    body={'certification_schema':'G1_smooth-numerical-certification-v1','benchmark_id':BENCHMARK_ID,'certified_PDE_families':sorted({c['pde'] for c in capabilities if c['passed']}),'certified_geometry_families':sorted({c['family'] for c in capabilities if c['passed']}),'certified_mesh_resolutions':[POLICY['reference_h']],
           'certified_field_prior':{p:prior_version(p) for p in PDES},'certified_boundary_policies':[BOUNDARY_VERSION],'certified_observation_policy':OBSERVATION_VERSION,
           'mesh_records':{f['family']:f['meshes'] for f in families},'independent_controls':json.loads((OUT/'independent-controls.json').read_text()),
           'analytical_square_controls':analytical,'boundary_controls':json.loads((OUT/'boundary-controls.json').read_text()),'reference_policy':POLICY,'normalizers':norms.asdict(),'capabilities':capabilities,'numerical_error_summary':{'threshold':THRESHOLD,'maximum':max(c['maximum_sampled_normalized_RMSE'] for c in capabilities)},

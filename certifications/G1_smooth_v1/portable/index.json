@@ -1,0 +1,787 @@
+{
+  "schema": "G1-smooth-frozen-numerical-inputs-v1",
+  "parent_certification_id": "f283e4371f7209b15a01bf9a1db536dad19203664a2b989a5eff9fe45e695171",
+  "parent_physics": {
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+    },
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "triangle": "20250106",
+      "shapely": "2.2.0"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  },
+  "meshes": {
+    "20cffa9348dbbaadf6ce43785de2ec6b04bcce20249a7a4c5996f31c896aa1ec": {
+      "file": "square-h0.01.npz",
+      "mesh_id": "3ac3df523261a30d873be595f25cc1bf8a67371a7c8972ab6d4430c673aa8815",
+      "geometry_id": "c8cb17902cf6cb2e483ed5a9045619b103e9d52576e5fe39b1e7cdd578d4bdc6",
+      "polygon_id": "5971d0683d2ca71e1b215f56abb80f233e956efc8a7b20cfc834cbbd13350762",
+      "h": 0.01,
+      "sha256": "f64e2c0dae645f7b7c666bd8f6fa3b1a306df09408890a2dd7f48f1d5553f512"
+    },
+    "9faa3cc5d22894efa259c49066fcd7214a404cc622ad6db512db8777a3e212c0": {
+      "file": "square-h0.02.npz",
+      "mesh_id": "4c972afd7c5a2faf5ec2b4d887c2b66cf99c4e6514da9b4001a191a6e065d3da",
+      "geometry_id": "c8cb17902cf6cb2e483ed5a9045619b103e9d52576e5fe39b1e7cdd578d4bdc6",
+      "polygon_id": "5971d0683d2ca71e1b215f56abb80f233e956efc8a7b20cfc834cbbd13350762",
+      "h": 0.02,
+      "sha256": "9855e341aeb0bbfd5638a6b881cb17dc8e12aa90bc3e0e1bb4c8a23942e0a509"
+    },
+    "8cc920c6c944859bf7f406a843b843d528e9bee6bcd4e89d908959f757436f51": {
+      "file": "square-h0.04.npz",
+      "mesh_id": "7b8fed9a77357b8f6c4eca95a49aebdccf0879a4a27552f17ed5623a5014acd0",
+      "geometry_id": "c8cb17902cf6cb2e483ed5a9045619b103e9d52576e5fe39b1e7cdd578d4bdc6",
+      "polygon_id": "5971d0683d2ca71e1b215f56abb80f233e956efc8a7b20cfc834cbbd13350762",
+      "h": 0.04,
+      "sha256": "8004b7540bb7e68a28dbd9c82a7b5bdf35036865d5d4b2dee37b6e0cb68a8680"
+    },
+    "bb1b3cd8895751e69885f6ed137fb0f062bc42fa4b36370c3291afe4e7a68900": {
+      "file": "square-h0.08.npz",
+      "mesh_id": "540bc2a2948eb5d5f161320666bb74b00fc3eff172182ec77b63d0e0b00935b7",
+      "geometry_id": "c8cb17902cf6cb2e483ed5a9045619b103e9d52576e5fe39b1e7cdd578d4bdc6",
+      "polygon_id": "5971d0683d2ca71e1b215f56abb80f233e956efc8a7b20cfc834cbbd13350762",
+      "h": 0.08,
+      "sha256": "f8c31891c559efb9bde6dc437ce40c3bdb76cabf0c6773745c61f909038c0124"
+    },
+    "ac8f3968ccd889654ee09ef2c3768507fdc146169b9e8b50c63826c41c538ffc": {
+      "file": "square-h0.12.npz",
+      "mesh_id": "4d2b9658232f9574a125cfaf9a504379b89df0c6d862102b3b37461f3ad7515a",
+      "geometry_id": "c8cb17902cf6cb2e483ed5a9045619b103e9d52576e5fe39b1e7cdd578d4bdc6",
+      "polygon_id": "5971d0683d2ca71e1b215f56abb80f233e956efc8a7b20cfc834cbbd13350762",
+      "h": 0.12,
+      "sha256": "e0fbbd4251b1de074cc852cd67bf657dbe18ea05aeca9ef76305b8399e46fb04"
+    },
+    "8752cade95c1c1dead141880388c882a8775f2a5923dce33e45982e827475710": {
+      "file": "rectangle-h0.01.npz",
+      "mesh_id": "3b4e05a3fe0ecaf6e402c68c45e83422f7f5fbd11a1fcad44f1a49b91cf619d5",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.01,
+      "sha256": "d687a29fe19c48c9c3b29dab2978c3b37c1e6c21b48db92ed1423b0069d4cd48"
+    },
+    "cf4a5770a44e847c0867b2e9ffcadf72fbd3302f899201125f5d467a3cb61f13": {
+      "file": "rectangle-h0.02.npz",
+      "mesh_id": "26f05bdb7a70170f5c9acc4ea5f1e6e485212e78878005c8cde43cbacf2a6440",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.02,
+      "sha256": "16dc57f72c5e95819e33562d912c3d08a8ed90a155df35a990481803191793ec"
+    },
+    "9280c9fefbec6534fe00caf2e17c1aeb302057fd5bd8267c5797b751a6bbf0df": {
+      "file": "rectangle-h0.04.npz",
+      "mesh_id": "8e0e14e8dfbde75f74d19ef3a12a1e64cb752fec4212a3fa278e16311eefeb7a",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.04,
+      "sha256": "19b48e99bcec6ed0f77e35f0f4eefb8c9efa95808cc4f6f9ee59cd75e80f2328"
+    },
+    "5dc3cd2c81f0060020653b20467dacef6991d53649eaffedfd52ed51f22d8842": {
+      "file": "rectangle-h0.08.npz",
+      "mesh_id": "da3d5623b5a963f42b85a972d622f72a0eace6fd040b0efdf5bcd9cbd069d7ec",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.08,
+      "sha256": "ba539d8623c5e43ecbc483605965896c9049e1f4014a518ac7d801b9c7a73125"
+    },
+    "5f6316c4267c752c74582f3ab11984d81a90c4341b2b79be480b325566625163": {
+      "file": "rectangle-h0.12.npz",
+      "mesh_id": "b43603ac7599d05fa9e0b010adfd662d62657b33893944b1bf3a52bd8ae70bf7",
+      "geometry_id": "43ffa35c8101923e32938fc043ea5d803046ffa92b67d44b40eeb623d04ea15b",
+      "polygon_id": "4a30fe64ab5726f42c80d8bff003e659ea4548af5316f8c3fed1aeb7fc182ddc",
+      "h": 0.12,
+      "sha256": "f3e50342242e2c9ad4ccf8d8cf93c07599602c12af6b68813169b150c343ec66"
+    },
+    "c7f2603bc203bb911643b6cc6e1c42e806861af9ca443f69e95c1a35d31ef2f7": {
+      "file": "lshape-h0.01.npz",
+      "mesh_id": "63352844cb5d16ca6748b34ed62936a47265753043fa3ca05b2ce2ea7f8f12df",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.01,
+      "sha256": "70d53817fb1ab46a001d274cbb9c2104077bb82ff3172dfca473e91a28dcd8ea"
+    },
+    "f7ba7497f6c8d14901e85fe7dbf068fbf7cba85264a58e9166e9a24c1ead49cf": {
+      "file": "lshape-h0.02.npz",
+      "mesh_id": "765c733834e51aaf105638faa03464fbe62fd411c58a1f157b1cad348e01c713",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.02,
+      "sha256": "15ea1591a7c0c410f9c2b1632af45f165c41cae69898c488368f42605de9da65"
+    },
+    "95d5fdd2282f634effe43062013697826561698159c082f899e8a626ff743af0": {
+      "file": "lshape-h0.04.npz",
+      "mesh_id": "5625b90e25a3cc980f0e00c0232171b95f7c0175174b301b67e2a04bc8f9ab3a",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.04,
+      "sha256": "b9273a9c4f1a386713832f95e6bf3693af17dfa7986485e92e215b6a722681a7"
+    },
+    "677d15348dd3074bae3f2c8136a5962f7fbf3a5eb373c2cb89278f61e4bc2189": {
+      "file": "lshape-h0.08.npz",
+      "mesh_id": "7c2f84b4ace8cfcda511bb875986cdf0a8bdbe5ba5d49fba3352bf643f414b9d",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.08,
+      "sha256": "b6e26c4da3d8b2e90e00a039daccfacbe2b60a1dfbd847f60a06600bba34c511"
+    },
+    "85bd4d85a2b41a3dbab09a36a7558908606f241a373fd98c54d0a9f880a5d9fe": {
+      "file": "lshape-h0.12.npz",
+      "mesh_id": "78320943370cd2a69785ba2e2040a06a06c5a2587bc1f03f37d33b3037b156cc",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.12,
+      "sha256": "85ee515f1852d2a998d94c94d02133202f515d5d8f19a82f87d6f8f7ca81c6fa"
+    },
+    "85e562b2ee352eb9538500b66d7dbed0bd2d52f078d39714110c154bb984bcc6": {
+      "file": "disk-h0.01.npz",
+      "mesh_id": "061c15b88443ffc05ee494e606d8a642e5a6936de635451f9e3629436d8ae3f9",
+      "geometry_id": "2debf0a1ef0b9a99e4423423a239a30a0b56f7c2afc4ce407c4889591b27b0a8",
+      "polygon_id": "bc94a12bdb1812cd3138d73074e1c63a5ed6810d882839f29d2187957f4d72f0",
+      "h": 0.01,
+      "sha256": "7ab7ebecdcadd07c2a8563e594c08c9653a51b6ecea957eec6f2f61cc2f76363"
+    },
+    "7f228a040192a4142fbc53969f908f4e83b109ca1a6a89fe048cd092252beaaa": {
+      "file": "disk-h0.02.npz",
+      "mesh_id": "7ac291feb82e90db4aa77d314d9fcf6f9042320e32827d7f34aa54d252d601a6",
+      "geometry_id": "2debf0a1ef0b9a99e4423423a239a30a0b56f7c2afc4ce407c4889591b27b0a8",
+      "polygon_id": "bc94a12bdb1812cd3138d73074e1c63a5ed6810d882839f29d2187957f4d72f0",
+      "h": 0.02,
+      "sha256": "745de141540654988edea411da27892ba7f7da1363592934118e92e6557d6dcd"
+    },
+    "fb19b2ac599389c04456ecfa0b52dec8ec81928ee8f778f8b4d2a7a3c064c5a2": {
+      "file": "disk-h0.04.npz",
+      "mesh_id": "d0a2202fbe7bc7e64ad93fd09a4b7580e8186da1467640f3f12062495327742d",
+      "geometry_id": "2debf0a1ef0b9a99e4423423a239a30a0b56f7c2afc4ce407c4889591b27b0a8",
+      "polygon_id": "bc94a12bdb1812cd3138d73074e1c63a5ed6810d882839f29d2187957f4d72f0",
+      "h": 0.04,
+      "sha256": "deb2af588eb6e2301d3f10c18bb1f79638559231805771ebaffca59abfc49abe"
+    },
+    "6cb247662a28e86a98668b9c178c2b7a2a4adffc2df4168376287abad8022de7": {
+      "file": "disk-h0.08.npz",
+      "mesh_id": "6579278daab787c9e26781a4d94c2fab59a0f8de8b62fdfbe5a43494fb1cb22f",
+      "geometry_id": "2debf0a1ef0b9a99e4423423a239a30a0b56f7c2afc4ce407c4889591b27b0a8",
+      "polygon_id": "bc94a12bdb1812cd3138d73074e1c63a5ed6810d882839f29d2187957f4d72f0",
+      "h": 0.08,
+      "sha256": "93f0c275bc6b514f309396ffb5139288941854ca96f97f6de505084fe69e5c49"
+    },
+    "9f26c81de2ed8f67bad302e63c51c727ec6b4fed74681b06c6424218d72a14a1": {
+      "file": "disk-h0.12.npz",
+      "mesh_id": "91d46d4ce21487b7e88615e0f0381a9af81d00949b042fe22f3c80a631ae8588",
+      "geometry_id": "2debf0a1ef0b9a99e4423423a239a30a0b56f7c2afc4ce407c4889591b27b0a8",
+      "polygon_id": "bc94a12bdb1812cd3138d73074e1c63a5ed6810d882839f29d2187957f4d72f0",
+      "h": 0.12,
+      "sha256": "57eab99f98f0e20eb5c4dec095c4bb2e101e8b8d61e71ede15b3245375252c7c"
+    },
+    "7227b453901f94945c47893b842b8e431351aac0b1d9a4ee556661f07db4a62e": {
+      "file": "ellipse-h0.01.npz",
+      "mesh_id": "2cee86db53ea787746675966569a6d2bbb08f87331e981324623e659ed3fb89e",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.01,
+      "sha256": "af6e4f3315321e2b8c0bfc82860f7184663f7764db8a9adf140c874f11c76f1c"
+    },
+    "bc54745e7bb8c3543f0d78e8feb714333f57c2032ce0a7d23cfaa7c375b1d7fe": {
+      "file": "ellipse-h0.02.npz",
+      "mesh_id": "7879044b10994a91653f42584d816ce0c48b998cd001437bb1dfda8e434f2ca9",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.02,
+      "sha256": "299f171237869227373b199e30eadd71a37a19df6545531186f7eb3bfc067112"
+    },
+    "23d5375dc607f30848c2605753ee8b755be1e30e1e2c4da498d10e7405eb164a": {
+      "file": "ellipse-h0.04.npz",
+      "mesh_id": "31e6908a69101a742216e119f434e237a6f4b5cb03b8cc0d8fa5599b2a8a54c2",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.04,
+      "sha256": "3fd92687171823c64fd51bf49a30d2ff8f24c19bb4b2db236f60c611aab72815"
+    },
+    "fcb830e82001bee37c28318955c11938811aedbcd1e4c2830567117111756cf1": {
+      "file": "ellipse-h0.08.npz",
+      "mesh_id": "e595944e8473cb6afb3af042774890104f87112c21e51e8084514e8394acbe0d",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.08,
+      "sha256": "2b1d2d7a66bc7061f91990971bfc51f08f94f140568b3310c6f38d4188456d04"
+    },
+    "9f9887cc084b3c8dd4bd4f0b68bed2bb74a57f6a7ec77140b9770ebea4fb03c6": {
+      "file": "ellipse-h0.12.npz",
+      "mesh_id": "1a32085e79dfedd93a093b1f147b20880832c405733ea3b61cb0187891211681",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.12,
+      "sha256": "9ad1617f2744fa12f4a539a833a6e395cb9121f5f4ed238d32178c8b5109db1f"
+    },
+    "a032a35fcc7aa08331f375d9ba2e937cc80f61d076377d9d9f8d7f1adea26959": {
+      "file": "hole-h0.01.npz",
+      "mesh_id": "ab70d5ca9fd5b189dea36f870142342897ca7d1a195d4c7bc76cdc2f1b319865",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.01,
+      "sha256": "90016688fa10c0bf6cd3cd05f95a32e8a81a829ae6427b1b1a8f70d903ad1dac"
+    },
+    "9f7bf0a74ebd0467a2193747bbb45f302d455d9dd24b0e1fd18949e028fde193": {
+      "file": "hole-h0.02.npz",
+      "mesh_id": "5c24a00b1e348b8d2108033f3fe2fe20f92dac8d84b5b78375c069836c11003e",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.02,
+      "sha256": "048d2efd00c04dc8634a8e4d94bb7253f98d56eb28daeddc8e9e97093fa9936f"
+    },
+    "daefadf2180df719208d60c2a0dcc1ba2afcc5c4ec7bffaddb6bdc4bb3222104": {
+      "file": "hole-h0.04.npz",
+      "mesh_id": "e088c5180885bd63310afab033058623c29c11759381a95c3c5aec0d16e9ddf6",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.04,
+      "sha256": "879e0fff5b3448020ff2fad57618b1bf270b55c4be86ed989e3e3ee4d8f3def5"
+    },
+    "7bded6ea151d91b713e83d65e7f9a0731f82a5585591cb4673ec6c0dc14743a3": {
+      "file": "hole-h0.08.npz",
+      "mesh_id": "c247e83842f8b78cd8595a4511b081c6ba06ee728ca8c214c30191982355527c",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.08,
+      "sha256": "53f6d7aba4e820f504ecbd8d4e68cc92b1d20cd67af626548e4ecdd839237ea4"
+    },
+    "b7896570db2f54bec0c733052fa2cba32d105fb69fbb19b7c07d9db329cac453": {
+      "file": "hole-h0.12.npz",
+      "mesh_id": "9b6b2bbd07f22f921b5c565c6942314c55ac1c0d4ba916c0dc6d798622d19236",
+      "geometry_id": "bc194d5cc6bbf1ef793831da467efa7a81b55471abed9ba60292b879fc6e4086",
+      "polygon_id": "cb56ff99b556529e63f66345acbad7b5413cb4421d32b5fce218ac8e524ae6e9",
+      "h": 0.12,
+      "sha256": "5843634eec1f9ac3bae1a295eea9e1ac4173a05fdad76131edbf7ff0f539f178"
+    },
+    "f1edd1df0389e2dc734d0a9b61cbaefaed2412e859f0b4174831367e6c4a886b": {
+      "file": "annulus-h0.01.npz",
+      "mesh_id": "dc79360e0802e1ddb44a2e1093a6de89746a99375566a025f2655a9587772a27",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.01,
+      "sha256": "f54a4cd05700df480e6b1fbc5c801632f5df9b32cc7c19961695cc96fc0743d2"
+    },
+    "705bb7317ee15fd495d2261d2c910f16c08322fa028f8fc0c24361cd36790a07": {
+      "file": "annulus-h0.02.npz",
+      "mesh_id": "c48e033c0d79e8638dc01c4a67b2f1ca376ce474c28fd03a43a646c93c6b29fc",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.02,
+      "sha256": "dfa4ef57c45c6a6e68b41929bcee3706183ae8fd39541277325da9f8b23e75dc"
+    },
+    "a25a44414cad551307da4fc36be0fa8712f7728ee4e18a5e6305e481e0e0b602": {
+      "file": "annulus-h0.04.npz",
+      "mesh_id": "1c0b7399c76bf3a9edb44df325c4424ff1120ed9811d19080645c188576262dd",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.04,
+      "sha256": "e1b453e8b41760648dac636025c2d157e6cc5188e21a76e868895d471b37415c"
+    },
+    "fc69989e503f2836786998ba45891d1cd8a5ff34594552e5416fa42187e31ffa": {
+      "file": "annulus-h0.08.npz",
+      "mesh_id": "6fea3ea433439808641b9a91ea196f145b9bcc5d955612988058ed7e1578b650",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.08,
+      "sha256": "ad0cc96c1689fe10cd46e7df3681411a254e54aef1b7e204572515551f3d6493"
+    },
+    "888aa3d09299d51b78982e4d65f1f9faa34f3ed521c9a3aafa6fe3be9e02d65d": {
+      "file": "annulus-h0.12.npz",
+      "mesh_id": "e9ed69844065a10aae9384ea1aa43490e49b27aee8189d285deef8f95bce9f04",
+      "geometry_id": "d48950b21373b181ded248b0b898f451d533202ceb83fcecd115945e9de8190b",
+      "polygon_id": "913a9905c87cb28af2ccfd09a9ad12db76090c548c7ee80d321e7f5353377218",
+      "h": 0.12,
+      "sha256": "887f45396200ed02ec94c93d1dbf3b7f7708d09823fda963df447d675610e7a4"
+    },
+    "ed5c21de604fbaa690a01bfe5c091142a8dd59724734d56252b39f41568eaa8a": {
+      "file": "polygon-h0.01.npz",
+      "mesh_id": "881f5c75ae185a95dd7f5e57c292372e743b96bd53250aac8b76c22862c2cef5",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.01,
+      "sha256": "954367d0da516e08da475cfe152f59ac7238076049eac8421d08891f90f1a8de"
+    },
+    "ad28612bff8044e2721060fe7c77388c6dcb8421e2f022a1312088f54151ddf5": {
+      "file": "polygon-h0.02.npz",
+      "mesh_id": "cf50217ace4b3fa7b8ec5b7b6f1313b1dc8f923932c0660e833ae10b15f18c1f",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.02,
+      "sha256": "c168591562fe9bbe73700bb1cc82a2dee27c71ea79a1bdfaf949f446f5a70854"
+    },
+    "b583001f68a60a950d91ed4f89674a66302aadfff9d8400664d68df46bfcc6f8": {
+      "file": "polygon-h0.04.npz",
+      "mesh_id": "3d72d3982fb711fa83933f1dcbb11df805dc8809537209ca43249e7194077d4e",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.04,
+      "sha256": "024e495adfe0f59fa6a100a14c9f00456c62cc54aa9d8ad58ff9a24f2eef4cfa"
+    },
+    "a607e1ba83a948810418ad280b4f85c793776e393e79281813835b517ae15852": {
+      "file": "polygon-h0.08.npz",
+      "mesh_id": "6a2a13f2f3dfa9550b0c1b83cb0860dc4ec06c8970bffbc0ad363e78324efadf",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.08,
+      "sha256": "020bb39923bd1b97fda8eb9b78291d7a3b72a66caa0e3bcba6137a4d0cc9fbf8"
+    },
+    "af37a7a307320d7a05d4cf5d325f94f40f042444dccf2fa13bf24622259f9a79": {
+      "file": "polygon-h0.12.npz",
+      "mesh_id": "6cf2dca1227dcfe559d5b7e6a43174149a685b963164cf9b4e4aff5614a136a5",
+      "geometry_id": "3f2100942e6a238eb88ef65a2f8bf50b542f95f04d596622f42dd3e4c94a6fcd",
+      "polygon_id": "f08f0b9fc29f583116cc19e94e4be4d2d365ab3a72208c1c556f12ea8bb732ae",
+      "h": 0.12,
+      "sha256": "8e3272fb2e9912a109c68008f433f375517d8692406c540d2135dbf5b90f4637"
+    }
+  },
+  "families": {
+    "square": {
+      "basis_file": "square-basis.npz",
+      "basis_sha256": "f58b370784dbabe061501faa311ae55a8678c0dfcb6cf0facc2ae98b92e56498",
+      "reference_file": "square-reference.npz",
+      "reference_sha256": "de99de8c0ce08aa96025da0de74b44b6a4c8cc9c2fca8cc2d716e3adebf61447",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "efc08c89fbd11e05c658c515dd0ae9ec6357c8f4181631305fe759d39def3865"
+          },
+          {
+            "f": "ef44ce27b483f1df57227a841d69d569f51fc50571d162fa10269032328d16d1"
+          },
+          {
+            "f": "9183a052ebbdcb1d9a88ffa3bd9989fa5e3140fc0e29253c025734fb04ace946"
+          },
+          {
+            "f": "3d422c0b16697b7957d04025127a0aadfbcde00559249cdbe283bd7727b0268c"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "b876baff4f1adb85b3d931bd5f5542e0dca6d8d92ef8371dc2e447cbc5d7a6fc"
+          },
+          {
+            "u0": "36b66243343b56d29f9686db950b4331921dda3dd760b5bfa9d747b55e6f9c18"
+          },
+          {
+            "u0": "0b1b70b7db3f5a88a025f3335f111df652d438a891c9056fdefffcd7ba64c54f"
+          },
+          {
+            "u0": "9ac9ef7a0842ef3ac77b289a48c649359b16f03ec1317eb704ea70afa699047f"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "e292a76a80f071f0a8cd2f10206d18a73d75419cfaae1b94bc4a081d63f58c90",
+            "v0": "3c31b85c73880cc72c8fc9a4a3c0d55fb727b3ef0203143d11e8599d509844b9"
+          },
+          {
+            "u0": "12f2c40717a29f6b551a245f9b841e957d3cf54048b203775ca530275a552415",
+            "v0": "54250f78a88c1a6fb66049d7c29d9f1272d99cc7bbcee9ca1c06ce87e6f783a9"
+          },
+          {
+            "u0": "6f207b383d2e829b0c3c52d15a93c2eb391b7a643870e116d86e368c608535ba",
+            "v0": "396f347b514d6ba3e530e770c86f0f3799c46c6a129d0a8ca37688126964f0d7"
+          },
+          {
+            "u0": "5e1407798d505d58f9d0b23d36d202517ee9050ff8a58ea4a2f52b49472bc8fa",
+            "v0": "bb414f899ecf609f35dc48d0aa6e6d35af7782c7bd028335691d5cd145d5cae8"
+          }
+        ]
+      },
+      "canonical_mesh_id": "540bc2a2948eb5d5f161320666bb74b00fc3eff172182ec77b63d0e0b00935b7"
+    },
+    "rectangle": {
+      "basis_file": "rectangle-basis.npz",
+      "basis_sha256": "6ae02d7c7df1eb1ae30b469813741ed38aa0d622559e6fd482e18e2cd8604b3b",
+      "reference_file": "rectangle-reference.npz",
+      "reference_sha256": "1a79dbdef63c2149570afb308bfb822ceb5534a19bc1b71b5791e69f00ef0581",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "6d68fece8337e668ef2df3d3c2d061706b68a1289cc3acc2b7f907b13b92bd52"
+          },
+          {
+            "f": "6aa763d87ab945434f7940966071279ce33b932a64aa119772655178d68494f5"
+          },
+          {
+            "f": "03f2d7e5c41b066af14e87e107509fa21b6a1cb2ff4f9d45e601e5c604f60d4d"
+          },
+          {
+            "f": "aed74c122f77ae38c4b6d90a3c0c4dde0c9a41940020e2d0ce32387b313ec933"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "141ef6c827c437be6893b0e0e35af6d205d29510275de3a361e2d6a2011230b1"
+          },
+          {
+            "u0": "f6f7c7626293d64f7ff87d38c8008ee7ff8b08db79f42ba0ff4d297258db2277"
+          },
+          {
+            "u0": "af0fecafdda191528cf38ab55844aab7a07f0adf4c6a395a7c5bb4751167f7e9"
+          },
+          {
+            "u0": "cb6489b495184242340e3e5d3f84734634598c99a0ab94fae0ce945d434b3b6f"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "b3661d03d581eba1cf5ff9fd0ed2e837e4eb5a8b25e3e0d2015c1cbf3bf856ca",
+            "v0": "e6d7fcb65e3e63ac83028ef90c74f65091e5c4b658e26943d93509b327b1d617"
+          },
+          {
+            "u0": "0a506975deefb7bef9acda158cce893b2953464f355d463b17a471e40bca01d9",
+            "v0": "081a6fbbd7ef561fb3f29534ccde18fc828750c79810fbf9b684dc1959ca2668"
+          },
+          {
+            "u0": "6b7a1cd66ff5db1488088d4e3be4ba92df458298dfee09ed4d5057e1599a1d6f",
+            "v0": "84c4d293da5d64d616e7e60a081ede03e37620ecc94ef1ad8ded133ce74b8315"
+          },
+          {
+            "u0": "f61ee065f4e23abf85c543ef70def6cd2f547c0d319833058c4ad31badfc4b27",
+            "v0": "a261bdfcdcf47ef23a15b756e745b6c4344e374ee26598734e27accf0d3ae5a1"
+          }
+        ]
+      },
+      "canonical_mesh_id": "da3d5623b5a963f42b85a972d622f72a0eace6fd040b0efdf5bcd9cbd069d7ec"
+    },
+    "lshape": {
+      "basis_file": "lshape-basis.npz",
+      "basis_sha256": "be867302a302e8eac914ef6636b22aed6bf4f55c4a5aedae95d4896c085b4713",
+      "reference_file": "lshape-reference.npz",
+      "reference_sha256": "97517d771f47600cbb5c28ef9425f2314cfb71a72b02ba23a7bfaeb2bd3be375",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "9f671c81d43988472550874f9527320b5aa385b0fa1a84d39b992abaf76cea6a"
+          },
+          {
+            "f": "c3b8a5ec11e73f863bbf89bef5df3148e00da8603266f9289d2047e1ae8bdeeb"
+          },
+          {
+            "f": "dd58bad25c887842000048bad33d3f1ee7efe388736f3e12114720c72ba21e88"
+          },
+          {
+            "f": "57a21c3e3a6e0f03be60a3f5105de45bd021fbc31f33001c86857bc6844eb121"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "c9462416e3f0b3209caaf93ac3c68dd0cabb341ff922633313952c4105dba961"
+          },
+          {
+            "u0": "c93ab7fb1243397dbd3388d63189432c8b463339c2a40676a960037a14e80bea"
+          },
+          {
+            "u0": "cebb3ce3653c78d91d56b4b532b853317963c218105033d82627317c20b3d780"
+          },
+          {
+            "u0": "e353e6a12a1718b35c94b4dfe3fdd24e1e3d7ea35ca1f754ce958d1cede54adb"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "7e7653ae3c0fdeaf0392e8227ddf8fdb56977373624013f0fe7157a6c6af5470",
+            "v0": "0d80eb840489d3dacb77682ff3ed6e611722c3b03cedc216c89b849da74586ee"
+          },
+          {
+            "u0": "55a1e23528e2e49cfd575724b49127e2b48a04c93bc6ddd44f034bef74228f1b",
+            "v0": "29d485da5118b0324e5e65e23a3edbaf84c66bdcc4c4ed6d5ea22ce68d8a2a8b"
+          },
+          {
+            "u0": "67d84468d07c888b87a5715214df7ddeda5db4dc19da40750fadef4a332094d5",
+            "v0": "5003db1f0448aeabfaa11002ba7ea7d632b3a46752319fec076ea00f6cbe3312"
+          },
+          {
+            "u0": "d83befb7920a7ba8dbc30a3ce34de1b9f1e4a103246295f2f9a89f8e3af8a800",
+            "v0": "a2cb7b202d8bef6c9138172fbdddd9abb3c8d667adaee6b617034f3ccb9fbefd"
+          }
+        ]
+      },
+      "canonical_mesh_id": "7c2f84b4ace8cfcda511bb875986cdf0a8bdbe5ba5d49fba3352bf643f414b9d"
+    },
+    "disk": {
+      "basis_file": "disk-basis.npz",
+      "basis_sha256": "5fdcd51a1b012827c5a704a71b644b0b44c25a9847512626f513977c084ea801",
+      "reference_file": "disk-reference.npz",
+      "reference_sha256": "51ad3be3c677e6b2c804e978aa6ec46cdad25011eb3ba99bf10c119ab4c263cb",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "a6984a2103af5c4ff0f9e44793692c5b56d92d6dbb84702e9b58620e0ad5a215"
+          },
+          {
+            "f": "05a729b9cb744069f840e47f26a9d409482ac63718deeb234cac670237b9f27a"
+          },
+          {
+            "f": "0205af6fd33f4f94c7b0807459aef2b01279208a87da0b1f8096a142c73c31a9"
+          },
+          {
+            "f": "3512fc853afb5d91db6c313eb7ec6728e161be67219174fe4d3d7f2becfa07ee"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "6df11472456b0c7b8023cf0f437e09b0d1d92c77f00f5e48a8901a7d8b94686f"
+          },
+          {
+            "u0": "782fb830dfbce61cf78931f79b443e779c757c30e56d0da350db51a59050faae"
+          },
+          {
+            "u0": "1372f481335e9c656e9bc232e19886c291537980373caecf77329f0cf5a99a21"
+          },
+          {
+            "u0": "9c949b93420cd6f812ede368247be0bd75170cbe927a5afbb785835921c41d36"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "537cbee399f6357c0259bceff04e3ad280f4a15b27d8398952746cce30324455",
+            "v0": "1b54a1ccdcf88b93c7c1d5232d516bdf31647ecb7ebe84c3a0d7ae044053231d"
+          },
+          {
+            "u0": "e163e55688a70614ea90f59d06e3be82d3bb12dd3c48bcbc7133b44455ca64c2",
+            "v0": "eefb36d8e1c245d7385b72a63b9a9ef402a1a43742403c950ef9eda33b50adff"
+          },
+          {
+            "u0": "acccf1d2c6b62cac31305dfd58a8333e46e2f0d22246eb374a0204f2a409e0af",
+            "v0": "e18cfc6e4e4732f5438fbbc3892b91174dd50c93c158270803c443972bd6719c"
+          },
+          {
+            "u0": "efe7d67ee3580456ffb836e48690c02deea917da39af0d90bcde0d445c7473d6",
+            "v0": "165b850ccf64469d16229c5f3a6ea36156913d1f2c1d7a0f4cca8cc53396abc6"
+          }
+        ]
+      },
+      "canonical_mesh_id": "6579278daab787c9e26781a4d94c2fab59a0f8de8b62fdfbe5a43494fb1cb22f"
+    },
+    "ellipse": {
+      "basis_file": "ellipse-basis.npz",
+      "basis_sha256": "92ea1df6c00cf8118ffdfd1d26c180e15043957b16454aaaaac512530579029e",
+      "reference_file": "ellipse-reference.npz",
+      "reference_sha256": "1563527ff96a5d6f818da042f573ed902dc3c751f7645f618b4ec7bff9428845",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "2533e595a392872219cacc15d0b37711cff2bae01b3b50161469d51406d0529a"
+          },
+          {
+            "f": "bc25a408b5d4ef799fc3778f6781e9f31a43e1006b967a8227c230496a892d30"
+          },
+          {
+            "f": "f6e7858da07619cc4c5bfeb91ae8c012a2d3700f9c555325e4f305d0ec33a898"
+          },
+          {
+            "f": "0d6a7f88da6306f3fe85c27b0598a0316e35e222d84c289f140cfa19a93ea494"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "e5d1b08de384acc7955986b030a1149057d1246afcd67bd55352bc9f7310e507"
+          },
+          {
+            "u0": "a1275b9c716ae524b423e733869fe4a75a36f87e15782f541ea0e347b2ffa869"
+          },
+          {
+            "u0": "86022817935553a4bf609964d01d8a2d9d18659ca56d75981ab67927c2d0f803"
+          },
+          {
+            "u0": "deba19adfba0f6b1443974c9e433c867b9479478af4ed06be2157efae7aafe81"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "fcbf2018075b70820810fe989d50902b8bf7b62b3dda9cbe09e557497cedb545",
+            "v0": "a09d9eed1a6323a32e2cb115692f1763dbeaa9d07cad99f04bf83f8800dd3420"
+          },
+          {
+            "u0": "3dcc1922cc2d37a8dad6d1c9c9d30dab4cc981f8e58ecbfa15369f2b5958775e",
+            "v0": "eb00d61d7b3d569159ceb8055e1d4b858271cdce2dca611310c7798873942e8d"
+          },
+          {
+            "u0": "62f02f6a971afe737a355d599c931f67e9a054ae2b05d3bc4da92d5e1cd866e9",
+            "v0": "86a09679b447074c139b82a105edca2f6d95d0eb0cd7cc8d37719fb7a4f0775c"
+          },
+          {
+            "u0": "f21f154c866377ea52a623d243d22f4182017e30564ac3f84a935c420d3a9958",
+            "v0": "9ddb902f6c4a6a4c7052d05c578f3f230455262632fe85b42adb8964f81ce685"
+          }
+        ]
+      },
+      "canonical_mesh_id": "e595944e8473cb6afb3af042774890104f87112c21e51e8084514e8394acbe0d"
+    },
+    "hole": {
+      "basis_file": "hole-basis.npz",
+      "basis_sha256": "30e27600a18420d34110d0a620543d1070967be4b60920244ca10c48cbd55760",
+      "reference_file": "hole-reference.npz",
+      "reference_sha256": "0abc8ef9d8374a259df240b50a20ee833de0139d3b1c879df3d835c14a6e7e26",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "bc3ad08808ee65b001e8f9857ca56ef0177a3a479f2441bbb4a9ea19658e609e"
+          },
+          {
+            "f": "9ea5bba5f792a203f9a7be11b35fcf23cf0d383989fb9840aac1e75fab173ed5"
+          },
+          {
+            "f": "9962114b301bc05e82a7bd8717436ed7e49ac5fcadc68d089fa52f03810fb048"
+          },
+          {
+            "f": "6b3f9c4774723470f843f87f39234eb11acb0c283c08a41a77131838dfd57e7f"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "ee6c12a557723159a5150c868a8230b68363dab2f1a446e9749832efaa7978ce"
+          },
+          {
+            "u0": "ef1b50fc44f90ff17c855ca0f76ffe8feae2783af28aa2660ebad26d02c0d9b1"
+          },
+          {
+            "u0": "f0c5d0182409fe5e9ef1f021e8b4a3cd6c0c81809b3af93cdf04928972886cd5"
+          },
+          {
+            "u0": "cbb8d4244bab85de8a7d807f6141ea8a553e5ad8635154fd822a94f6a2506d95"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "2b53522345f9e5ae317af27a4308982f5d4d9d198cd674b975245ca249da53c6",
+            "v0": "4c751d76f1488780af683f883020a3ffe7db19c2f3e11cfa4cbf8c572268a5c4"
+          },
+          {
+            "u0": "2831db22d47ba817410e9eba146e0a84d68c9a95df5b0758829e8043c5b5b9b8",
+            "v0": "f59a4a5d12a62c0193e0606bef508f511aca3048747c32b6b28654af58592a67"
+          },
+          {
+            "u0": "4def5b64985671f3c56d6f7ebe153a02bcaacd73a26a80c74029f624cd6f2717",
+            "v0": "ebddb3780a7ca0a227118473904d68dca25af70b50aba90ca31d02a58e0cc980"
+          },
+          {
+            "u0": "95bb74f33667ba7b68172692d6799c7d1dfa41bee5a10233496351307523b133",
+            "v0": "de46c06b0c35ea1841f3a0715a3c854b6f93372970c73bad915cbea9cd632857"
+          }
+        ]
+      },
+      "canonical_mesh_id": "c247e83842f8b78cd8595a4511b081c6ba06ee728ca8c214c30191982355527c"
+    },
+    "annulus": {
+      "basis_file": "annulus-basis.npz",
+      "basis_sha256": "284299fdb159c8730e44138651b1d069b576952e5a35334254c9c1015563d9b2",
+      "reference_file": "annulus-reference.npz",
+      "reference_sha256": "da0adb5fb59657a0479bb8271b834ab41eb3b8061236a8a5ae0df3d182ee84ee",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "10875c3f8b007705d17da9351c0c2ce510b0e8ed05124a0b690e3fa3a34b8f71"
+          },
+          {
+            "f": "f1e1ef6b55460b94a9b44365c7011bb42e0663ef9053847f21ffd012f966b218"
+          },
+          {
+            "f": "06accc63551e918a17daef40361a7148f0e9c3bc8cdd2d99424891670f2a2a2b"
+          },
+          {
+            "f": "48f0763477923414616f3d017b88ce46103afb3c2a9831f84a720ab8ca2449d8"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "89e06f96de2de1dae13637dc402fe07895f07512d8037aca858deb55f5f55d94"
+          },
+          {
+            "u0": "13aea5771350ba84669c1ce3ffb81113d40f6beed4f83b7e0d1aeae4d1e658ad"
+          },
+          {
+            "u0": "e353d0bc4ae8638478dac61db8dbb0950f4531b1e3fb733b9554f83cf9c00fdc"
+          },
+          {
+            "u0": "ae9aaea4c78222b1d65ec46df226d8e3b44b2870e23ce0bd1494258dd15c3439"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "12ae9989fcd9a3f685028fd32b842ffb74abb92be5b8aa258a32b777cd48b50e",
+            "v0": "c558fadb3782bef3cd2ea9b4c22bf49eb5ffb45d092f220a0f8fb4c76bc41045"
+          },
+          {
+            "u0": "c66f385f12edc2092c5582f45e0144c0167a689fa867d26d588447cfaf871973",
+            "v0": "7b806f052e5e376aed6e0ec63d0c8a9525e710965cdce2591ab3398e432b5497"
+          },
+          {
+            "u0": "e86695f64494d559183f768f1fb006bfb63c50cbd262c57ad27e60af1d30ac65",
+            "v0": "5bbcf1a733d078ce2131f898c6b49451380673bb2467caef1bd78ecb9477b05e"
+          },
+          {
+            "u0": "ae972c7e6207f1e5859d68250b3705c8cece259946c62915d4f04a23db06c5de",
+            "v0": "547e08481d9414a317e97e04e4db19a0d701c9fa9d3bb97d8bf26a394b8f34a3"
+          }
+        ]
+      },
+      "canonical_mesh_id": "6fea3ea433439808641b9a91ea196f145b9bcc5d955612988058ed7e1578b650"
+    },
+    "polygon": {
+      "basis_file": "polygon-basis.npz",
+      "basis_sha256": "786495e07c71ebb6a2079ede9576ab66d7a9b65d77be9d9ad1c58569ca4bb2ae",
+      "reference_file": "polygon-reference.npz",
+      "reference_sha256": "e2b8c1537af778fc03c468cae000fcdde58ae3c3f10d66d0d71f97c20d1763a7",
+      "field_identities": {
+        "poisson": [
+          {
+            "f": "0cb3dfa96afdf89e01e652c48c3adc5da41de3b6ee08c0102f81bd84d4912c6b"
+          },
+          {
+            "f": "70277f47f9e0e40a85ab887d0deefc64596e9f66dfc4ff3df62a23e671e59cd0"
+          },
+          {
+            "f": "08ac8cb97f8d7c44d666db4b51bc1f37931b92ce2fe6d15c2fb1cb830eb449c9"
+          },
+          {
+            "f": "274aac0f582ef236f5eca9c99f0e0b4fcd1c524301108c939ad1581b4c5a0943"
+          }
+        ],
+        "heat": [
+          {
+            "u0": "4d19abfe3f5b082b8273313f2b394c13c1f86ad19fced341eb41eb924b8ac9e7"
+          },
+          {
+            "u0": "dc3324731f8fb5128f53b7725f8589e3cedf6d6c7830f84328ea4bc3dc874b55"
+          },
+          {
+            "u0": "9f024492edd7a978af3e4b06fc78bccbbb9f4f8eb45e06c2339b913b7a04164d"
+          },
+          {
+            "u0": "d3d83c6318282a5fe28dee3e9c0819887639b976f3b634c6671d2ec450354c49"
+          }
+        ],
+        "wave": [
+          {
+            "u0": "cd75dc58c05aaa0a23c0d3dd9a82d5979a3d91ee31c6a7ccd4134cdf4dea02b7",
+            "v0": "5a4d90aa402e6f19c5c1935470a2f1693a75b3c2feabff27e4c29eec6ea4ad49"
+          },
+          {
+            "u0": "1ab4e23dbdc27a013434870cc7f1f24ba17032df525e62955fab6d2d65c0a54f",
+            "v0": "3279811db12bedf861f6f062041bddf16d585fa0e840f2cc768aa7767938b939"
+          },
+          {
+            "u0": "f531fae26ed750b207dcbb9fa2f0b8f0474dfdc541f9670f9b5a4baa7b7dfb85",
+            "v0": "0af22bc962b1e82337866a331c8eb08000deeb6c65978872721522c89566691b"
+          },
+          {
+            "u0": "63b334d6a59973a475b1f0deba195ace83c2b9e84c213549c3175f79c9be5b61",
+            "v0": "e74d72cc6a4803a554ad173c5374c505658b01d84423a5e5ec32b861ae41fa07"
+          }
+        ]
+      },
+      "canonical_mesh_id": "6a2a13f2f3dfa9550b0c1b83cb0860dc4ec06c8970bffbc0ad363e78324efadf"
+    }
+  },
+  "identity": "20c96a131aad1be807d383af2dd8b4bf040e5b95d6d7600cd4485dc24343f26a"
+}

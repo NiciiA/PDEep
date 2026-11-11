@@ -21,7 +21,17 @@ def migrate_unaffected_checkpoint(path,destination):
     record,payload=read_payload(path,kind='training_checkpoint')
     require(record.get('scientific_schema')=='geometry-inverse-v1','only explicit geometry checkpoint migration supported')
     old=record['geometry_source'];new=geometry_identity();changed={k for k in set(old)|set(new) if old.get(k)!=new.get(k)}
-    require(bool(changed) and changed<={'domain.py','training.py'} and old['domain.py'] in {OLD_DOMAIN,FIXED_DOMAIN} and new['domain.py']==FIXED_DOMAIN and
+    # The later portable-input repair adds only a verified array loader. It is
+    # admitted by an exact source manifest AND the unchanged-mesh checks below.
+    portable_ok=False
+    proof=Path(__file__).resolve().parents[3]/'certifications/G1_smooth_v1/portable/execution.json'
+    if proof.exists():
+        import json
+        from ..core import digest
+        r=json.loads(proof.read_text())
+        portable_ok=r.get('identity')==digest({k:v for k,v in r.items() if k!='identity'}) and new==r.get('repaired_geometry_sources')
+    allowed={'domain.py','training.py','portable.py'} if portable_ok else {'domain.py','training.py'}
+    require(bool(changed) and changed<=allowed and old['domain.py'] in {OLD_DOMAIN,FIXED_DOMAIN} and (new['domain.py']==FIXED_DOMAIN or portable_ok) and
             old['training.py'] in {OLD_TRAINING,GATED_TRAINING} and new['training.py']==GATED_TRAINING,
             'migration requires only the reviewed mesher correction and research-launch gate; all scientific model/data code must match')
     config=record['config'];verified=[]
@@ -33,7 +43,7 @@ def migrate_unaffected_checkpoint(path,destination):
     exclude={'artifact_id','schema_version','created_UTC','files','verification','content_identity','payload_tree_identity'}
     metadata={k:v for k,v in record.items() if k not in exclude}
     metadata.update(geometry_source=new,compatibility_migration={'version':'G3-reviewed-mesh-format-v1','original_artifact':record['artifact_id'],
-                    'original_manifest':str(Path(path).resolve()),'old_domain_sha256':old['domain.py'],'fixed_domain_sha256':FIXED_DOMAIN,
+                    'original_manifest':str(Path(path).resolve()),'old_domain_sha256':old['domain.py'],'fixed_domain_sha256':new['domain.py'],
                     'old_training_sha256':old['training.py'],'gated_training_sha256':GATED_TRAINING,
                     'training_difference':'run() rejects uncertified research budgets; update arithmetic unchanged',
                     'verified_unchanged_meshes':verified,'weights_optimizer_RNG_changed':False})

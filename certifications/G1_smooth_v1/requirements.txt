@@ -1,4 +1,6 @@
-# Numerical reference environment; Python >=3.12. Neural CUDA Torch stays runtime-provided.
+# Original reference profile / fallback for MISSING packages only, Python >=3.12.
+# Do not pip-replace a loaded stack with this file. New consistent environments
+# require bounded numerical qualification. CUDA Torch stays runtime-provided.
 numpy==2.5.4
 scipy==1.18.1
 triangle==20250106

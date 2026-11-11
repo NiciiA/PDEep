@@ -32,6 +32,11 @@ def load_record(path=None,*,current=True):
     require(digest(body)==record.get('certification_id'),'certification content hash mismatch')
     require(record['benchmark_id']==BENCHMARK_ID,'wrong certification benchmark')
     require(record.get('certification_schema')=='G1_smooth-numerical-certification-v1' and 'mesh_records' in record and record.get('independent_controls',{}).get('passed') and record.get('boundary_controls',{}).get('passed') and record.get('analytical_square_controls',{}).get('passed'),'Incomplete certification: mesh identities and independent controls are required')
+    if current and path==ROOT/'default.json' and record['source_revision']!=physics_identity():
+        from .qualification import cached_record
+        qualified,location=cached_record(record)
+        require(qualified is not None,'No current numerical-environment certificate. Run the notebook Compatible reference certification cell (ensure_compatible_certificate) before preparing a plan; no optimizer updates occur there.')
+        return qualified
     if current:require(record.get('additional_scientific_sources')==additional_sources(),'Scientific dependency source changed; recertification required')
     if current:require(record['source_revision']==physics_identity(),'Selected benchmark is not numerically certified: scientific source/dependency identity changed. Required verification: recertify changed generator/solver/environment.')
     return record
@@ -60,6 +65,9 @@ def authorize(record,*,benchmark=BENCHMARK_ID,pdes=PDES,families=SEEN,policy=Non
     # Recheck integrity/current source even when handed a decoded object.
     require(digest({k:v for k,v in record.items() if k!='certification_id'})==record.get('certification_id'),'certification content hash mismatch')
     require(record.get('certification_schema')=='G1_smooth-numerical-certification-v1' and record.get('independent_controls',{}).get('passed') and record.get('boundary_controls',{}).get('passed') and record.get('analytical_square_controls',{}).get('passed') and 'mesh_records' in record,'Incomplete numerical certification; independent controls and exact mesh identities required')
+    if 'qualification' in record:
+        from .qualification import runtime_identity
+        require(record.get('runtime_identity')==runtime_identity(),'Numerical runtime/mesh resolver changed; run explicit environment qualification')
     require(record['source_revision']==physics_identity(),'Selected benchmark is not numerically certified: source/dependency identity changed; recertification required')
     require(record.get('additional_scientific_sources')==additional_sources(),'Scientific dependency source changed; recertification required')
     require(record.get('known_coefficients')==COEFFICIENTS,'Uncertified physical coefficients; source/configuration changed')
@@ -67,6 +75,10 @@ def authorize(record,*,benchmark=BENCHMARK_ID,pdes=PDES,families=SEEN,policy=Non
     require(boundary in record['certified_boundary_policies'],'Uncertified boundary policy; mixed/Neumann research is not certified by this D0 record')
     require(normalizer_identity is None or normalizer_identity==record['normalizers']['identity'],'Uncertified normalization identity')
     capabilities={(c['pde'],c['family']) for c in record['capabilities'] if c['passed'] and c['physical_cases']>=4 and c['maximum_sampled_normalized_RMSE']<=THRESHOLD and max(r['maximum_upper_bound'] for r in fixed_time_spatial_bounds(record,c['pde'],c['family']))<=THRESHOLD}
+    from .resolution import report_selection
+    selected=report_selection(record,tuple(f for f in families if f in GEOMETRIES),policy=policy,progress=lambda message:None)
+    for row in selected:
+        require(not row['differing_fields'],'Reference specification differs from certification: '+str(row['differing_fields'])+'; explicit bounded recertification required')
     for family in families:
         if family in record.get('mesh_records',{}):
             expected=record['mesh_records'][family]['production']

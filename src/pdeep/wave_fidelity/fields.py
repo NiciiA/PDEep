@@ -41,6 +41,9 @@ def centers(mesh,*,relative_radius=.18,count=32):
     # propagation discretization. Calling pair() after remeshing must not draw
     # a different continuous field.
     mesh=_canonical_geometry(mesh.shape)
+    from ..geometric.portable import stored_basis
+    frozen=stored_basis(mesh,relative_radius,count)
+    if frozen is not None:return frozen
     radius=relative_radius*np.sqrt(mesh.cell_areas.sum());seed=int(digest((VERSION,mesh.geometry_id,'centers',relative_radius,count))[:16],16)
     # Same represented polygon, deterministic physical candidates: sampling on
     # ONE canonical mesh only; caller freezes centers before mesh refinement.

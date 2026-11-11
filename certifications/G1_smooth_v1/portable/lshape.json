@@ -1,0 +1,126 @@
+{
+  "family": "lshape",
+  "meshes": {
+    "c7f2603bc203bb911643b6cc6e1c42e806861af9ca443f69e95c1a35d31ef2f7": {
+      "file": "lshape-h0.01.npz",
+      "mesh_id": "63352844cb5d16ca6748b34ed62936a47265753043fa3ca05b2ce2ea7f8f12df",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.01,
+      "sha256": "70d53817fb1ab46a001d274cbb9c2104077bb82ff3172dfca473e91a28dcd8ea"
+    },
+    "f7ba7497f6c8d14901e85fe7dbf068fbf7cba85264a58e9166e9a24c1ead49cf": {
+      "file": "lshape-h0.02.npz",
+      "mesh_id": "765c733834e51aaf105638faa03464fbe62fd411c58a1f157b1cad348e01c713",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.02,
+      "sha256": "15ea1591a7c0c410f9c2b1632af45f165c41cae69898c488368f42605de9da65"
+    },
+    "95d5fdd2282f634effe43062013697826561698159c082f899e8a626ff743af0": {
+      "file": "lshape-h0.04.npz",
+      "mesh_id": "5625b90e25a3cc980f0e00c0232171b95f7c0175174b301b67e2a04bc8f9ab3a",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.04,
+      "sha256": "b9273a9c4f1a386713832f95e6bf3693af17dfa7986485e92e215b6a722681a7"
+    },
+    "677d15348dd3074bae3f2c8136a5962f7fbf3a5eb373c2cb89278f61e4bc2189": {
+      "file": "lshape-h0.08.npz",
+      "mesh_id": "7c2f84b4ace8cfcda511bb875986cdf0a8bdbe5ba5d49fba3352bf643f414b9d",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.08,
+      "sha256": "b6e26c4da3d8b2e90e00a039daccfacbe2b60a1dfbd847f60a06600bba34c511"
+    },
+    "85bd4d85a2b41a3dbab09a36a7558908606f241a373fd98c54d0a9f880a5d9fe": {
+      "file": "lshape-h0.12.npz",
+      "mesh_id": "78320943370cd2a69785ba2e2040a06a06c5a2587bc1f03f37d33b3037b156cc",
+      "geometry_id": "aa9084f3e166c563d7614890eaeca4dd01c7818d1a15fea57c63643c092a1fc9",
+      "polygon_id": "28d6204c903cfe15e5728128b4b84f95e7627a28b71beb12dc1946ff5bd575c0",
+      "h": 0.12,
+      "sha256": "85ee515f1852d2a998d94c94d02133202f515d5d8f19a82f87d6f8f7ca81c6fa"
+    }
+  },
+  "basis_file": "lshape-basis.npz",
+  "basis_sha256": "be867302a302e8eac914ef6636b22aed6bf4f55c4a5aedae95d4896c085b4713",
+  "reference_file": "lshape-reference.npz",
+  "reference_sha256": "97517d771f47600cbb5c28ef9425f2314cfb71a72b02ba23a7bfaeb2bd3be375",
+  "field_identities": {
+    "poisson": [
+      {
+        "f": "9f671c81d43988472550874f9527320b5aa385b0fa1a84d39b992abaf76cea6a"
+      },
+      {
+        "f": "c3b8a5ec11e73f863bbf89bef5df3148e00da8603266f9289d2047e1ae8bdeeb"
+      },
+      {
+        "f": "dd58bad25c887842000048bad33d3f1ee7efe388736f3e12114720c72ba21e88"
+      },
+      {
+        "f": "57a21c3e3a6e0f03be60a3f5105de45bd021fbc31f33001c86857bc6844eb121"
+      }
+    ],
+    "heat": [
+      {
+        "u0": "c9462416e3f0b3209caaf93ac3c68dd0cabb341ff922633313952c4105dba961"
+      },
+      {
+        "u0": "c93ab7fb1243397dbd3388d63189432c8b463339c2a40676a960037a14e80bea"
+      },
+      {
+        "u0": "cebb3ce3653c78d91d56b4b532b853317963c218105033d82627317c20b3d780"
+      },
+      {
+        "u0": "e353e6a12a1718b35c94b4dfe3fdd24e1e3d7ea35ca1f754ce958d1cede54adb"
+      }
+    ],
+    "wave": [
+      {
+        "u0": "7e7653ae3c0fdeaf0392e8227ddf8fdb56977373624013f0fe7157a6c6af5470",
+        "v0": "0d80eb840489d3dacb77682ff3ed6e611722c3b03cedc216c89b849da74586ee"
+      },
+      {
+        "u0": "55a1e23528e2e49cfd575724b49127e2b48a04c93bc6ddd44f034bef74228f1b",
+        "v0": "29d485da5118b0324e5e65e23a3edbaf84c66bdcc4c4ed6d5ea22ce68d8a2a8b"
+      },
+      {
+        "u0": "67d84468d07c888b87a5715214df7ddeda5db4dc19da40750fadef4a332094d5",
+        "v0": "5003db1f0448aeabfaa11002ba7ea7d632b3a46752319fec076ea00f6cbe3312"
+      },
+      {
+        "u0": "d83befb7920a7ba8dbc30a3ce34de1b9f1e4a103246295f2f9a89f8e3af8a800",
+        "v0": "a2cb7b202d8bef6c9138172fbdddd9abb3c8d667adaee6b617034f3ccb9fbefd"
+      }
+    ]
+  },
+  "files": {
+    "lshape-h0.01.npz": "70d53817fb1ab46a001d274cbb9c2104077bb82ff3172dfca473e91a28dcd8ea",
+    "lshape-h0.02.npz": "15ea1591a7c0c410f9c2b1632af45f165c41cae69898c488368f42605de9da65",
+    "lshape-h0.04.npz": "b9273a9c4f1a386713832f95e6bf3693af17dfa7986485e92e215b6a722681a7",
+    "lshape-h0.08.npz": "b6e26c4da3d8b2e90e00a039daccfacbe2b60a1dfbd847f60a06600bba34c511",
+    "lshape-h0.12.npz": "85ee515f1852d2a998d94c94d02133202f515d5d8f19a82f87d6f8f7ca81c6fa",
+    "lshape-basis.npz": "be867302a302e8eac914ef6636b22aed6bf4f55c4a5aedae95d4896c085b4713",
+    "lshape-reference.npz": "97517d771f47600cbb5c28ef9425f2314cfb71a72b02ba23a7bfaeb2bd3be375"
+  },
+  "seconds": 60.222281291964464,
+  "parent_certification_id": "f283e4371f7209b15a01bf9a1db536dad19203664a2b989a5eff9fe45e695171",
+  "source_revision": {
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+    },
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "triangle": "20250106",
+      "shapely": "2.2.0"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  }
+}

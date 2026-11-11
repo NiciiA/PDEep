@@ -27,8 +27,10 @@ def field_matrix(fields,x):
 
 
 class Reference:
-    def __init__(self,family,h=.02,degree=4):
-        self.space=Space(geometry(family,h),degree,speed=1.);self.family=family;self.h=h;self.degree=degree;self.factors={}
+    def __init__(self,family,h=None,degree=None):
+        from .resolution import resolve_reference
+        mesh,spec,_=resolve_reference(family,h=h,degree=degree)
+        self.space=Space(mesh,spec.degree,speed=1.);self.family=family;self.h=spec.h;self.degree=spec.degree;self.factors={}
     def initial(self,fields):
         s=self.space;u=field_matrix(fields,s.position)
         require(np.max(np.abs(u[s.dirichlet]),initial=0.)<1e-10,'C3 initial trace incompatible with Dirichlet policy')

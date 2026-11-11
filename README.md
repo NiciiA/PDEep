@@ -17,7 +17,7 @@ See the [smooth scientific definition](docs/scientific_contract_G1_smooth_v1.md)
 ### Push and open directly in Colab
 
 Review and push the complete project to a repository you control, including
-`src/pdeep/geometric/`, `src/pdeep/wave_fidelity/`, `src/pdeep/smooth/`, scientific
+`src/pdeep/geometric/`, `src/pdeep/wave_fidelity/`, `src/pdeep/smooth/`, **all files in certifications/G1_smooth_v1/portable/ and qualified/**, scientific
 contracts, notebooks, scripts/tests and **certifications/**. Numerical reports are
 local/gitignored; the small certificate and its independent-control summaries are
 portable. Do not publish credentials or local experiment payloads. No push or
@@ -50,14 +50,23 @@ suppresses raw Git/pip output and refuses credential-bearing URLs.
    `REPO_URL="SET_YOUR_GITHUB_REPOSITORY_URL"` and setting `REPO_REF` to the chosen
    commit/tag. Set `USE_GOOGLE_DRIVE=True` for persistence (saved preference isFalse).
 2. Run **Automatic setup**, the collapsed next cell. It verifies/clones only an
-   absent checkout, checks origin/revision/clean state, installs editable with
-   geometry extras, prepares exact certified reference dependencies, validates
-   CUDA and mounts Drive if enabled. It never resets or overwrites changes.
-   The current numerical dependency lock requires Python>=3.12. If Colab already
-   imported older numerical packages, setup installs the lock and asks for one
-   runtime restart; rerun setup afterward. No training is permitted with stale modules.
-3. Run configuration and preview. The engine checks certificate/source/dependencies,
-   exact reference meshes, prior, observations and normalization. Colab never
+   absent checkout and checks origin/revision/clean state. **Before project scientific
+   imports**, it inspects installed AND loaded dependencies, keeps a consistent
+   NumPy/SciPy/Torch stack, installs only missing numerical packages with `--no-deps`,
+   then installs project code editable without upgrading notebook/kernel packages.
+   It validates CUDA and mounts Drive if enabled. It never resets source files,
+   reloads binary modules, restarts the kernel or changes a loaded NumPy installation.
+   Python>=3.12 is required for this smooth workflow.
+3. Run experiment configuration, then the separate **Compatible reference certification**
+   cell, then plan review. A compatible immutable environment certificate is reused.
+   A new platform/dependency profile performs an explicit bounded CPU64 qualification
+   (96 fixed cases, roughly10–12 minutes locally), with stage progress and zero optimizer
+   updates. Actual values must agree with frozen original references within1e-6 RMS;
+   inherited spatial/time bounds plus measured discrepancy must remain below0.2% RMS.
+   The exact original certified meshes and C3 bases are loaded from verified portable
+   artifacts; identities are recomputed from their arrays, never copied onto new meshes.
+   The engine checks certificate/source/dependencies, canonical reference mesh specification,
+   prior, observations and normalization. Colab never
    silently falls back to CPU. Local CPU/MPS uses the installed project, with no
    clone/install/Google import or Drive mount.
 4. **A tiny-overfit:** `MODELS=("A_GEO",)`, `EXPERIMENT="tiny_overfit"`,
@@ -832,3 +841,16 @@ were saved. A fresh click is required for legacy training; G1 research is also
 blocked at the engine entry point. The G3 verification executes a saved-train copy
 with engines/optimizers blocked and records zero training calls. No new unintended
 updates occurred during this follow-up.
+
+## Colab setup/reference portability repair
+
+See [the repair explanation](docs/colab_reference_repair.md) and local verification
+outputs under`reports/colab_repair/`. The ordinary fresh-session path uses the
+existing consistent scientific stack plus numerical qualification; **no restart**
+is requested. Colab initializes NumPy itself, so pinning a different version after
+startup was unsafe. A session already damaged by the OLD installer (loaded NumPy
+differs from its on-disk installation) cannot be repaired safely in place: choose
+**Runtime → Disconnect and delete runtime**, reconnect to GPU, and run the updated
+notebook from the new commit. This limitation applies to that already contaminated
+session, not to the new workflow. No automatic restart or hidden scientific worker
+is used. Native CUDA/Drive still require actual Colab verification.

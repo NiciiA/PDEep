@@ -1,0 +1,126 @@
+{
+  "family": "ellipse",
+  "meshes": {
+    "7227b453901f94945c47893b842b8e431351aac0b1d9a4ee556661f07db4a62e": {
+      "file": "ellipse-h0.01.npz",
+      "mesh_id": "2cee86db53ea787746675966569a6d2bbb08f87331e981324623e659ed3fb89e",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.01,
+      "sha256": "af6e4f3315321e2b8c0bfc82860f7184663f7764db8a9adf140c874f11c76f1c"
+    },
+    "bc54745e7bb8c3543f0d78e8feb714333f57c2032ce0a7d23cfaa7c375b1d7fe": {
+      "file": "ellipse-h0.02.npz",
+      "mesh_id": "7879044b10994a91653f42584d816ce0c48b998cd001437bb1dfda8e434f2ca9",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.02,
+      "sha256": "299f171237869227373b199e30eadd71a37a19df6545531186f7eb3bfc067112"
+    },
+    "23d5375dc607f30848c2605753ee8b755be1e30e1e2c4da498d10e7405eb164a": {
+      "file": "ellipse-h0.04.npz",
+      "mesh_id": "31e6908a69101a742216e119f434e237a6f4b5cb03b8cc0d8fa5599b2a8a54c2",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.04,
+      "sha256": "3fd92687171823c64fd51bf49a30d2ff8f24c19bb4b2db236f60c611aab72815"
+    },
+    "fcb830e82001bee37c28318955c11938811aedbcd1e4c2830567117111756cf1": {
+      "file": "ellipse-h0.08.npz",
+      "mesh_id": "e595944e8473cb6afb3af042774890104f87112c21e51e8084514e8394acbe0d",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.08,
+      "sha256": "2b1d2d7a66bc7061f91990971bfc51f08f94f140568b3310c6f38d4188456d04"
+    },
+    "9f9887cc084b3c8dd4bd4f0b68bed2bb74a57f6a7ec77140b9770ebea4fb03c6": {
+      "file": "ellipse-h0.12.npz",
+      "mesh_id": "1a32085e79dfedd93a093b1f147b20880832c405733ea3b61cb0187891211681",
+      "geometry_id": "228cef9003d0b767f0d519cd990baccec2c992659fa9e6998aba2fc5912e2b5a",
+      "polygon_id": "fcf0679392d16149ffbcaac58f13a72bcd9f94902ea2ea485d4796b2f906f816",
+      "h": 0.12,
+      "sha256": "9ad1617f2744fa12f4a539a833a6e395cb9121f5f4ed238d32178c8b5109db1f"
+    }
+  },
+  "basis_file": "ellipse-basis.npz",
+  "basis_sha256": "92ea1df6c00cf8118ffdfd1d26c180e15043957b16454aaaaac512530579029e",
+  "reference_file": "ellipse-reference.npz",
+  "reference_sha256": "1563527ff96a5d6f818da042f573ed902dc3c751f7645f618b4ec7bff9428845",
+  "field_identities": {
+    "poisson": [
+      {
+        "f": "2533e595a392872219cacc15d0b37711cff2bae01b3b50161469d51406d0529a"
+      },
+      {
+        "f": "bc25a408b5d4ef799fc3778f6781e9f31a43e1006b967a8227c230496a892d30"
+      },
+      {
+        "f": "f6e7858da07619cc4c5bfeb91ae8c012a2d3700f9c555325e4f305d0ec33a898"
+      },
+      {
+        "f": "0d6a7f88da6306f3fe85c27b0598a0316e35e222d84c289f140cfa19a93ea494"
+      }
+    ],
+    "heat": [
+      {
+        "u0": "e5d1b08de384acc7955986b030a1149057d1246afcd67bd55352bc9f7310e507"
+      },
+      {
+        "u0": "a1275b9c716ae524b423e733869fe4a75a36f87e15782f541ea0e347b2ffa869"
+      },
+      {
+        "u0": "86022817935553a4bf609964d01d8a2d9d18659ca56d75981ab67927c2d0f803"
+      },
+      {
+        "u0": "deba19adfba0f6b1443974c9e433c867b9479478af4ed06be2157efae7aafe81"
+      }
+    ],
+    "wave": [
+      {
+        "u0": "fcbf2018075b70820810fe989d50902b8bf7b62b3dda9cbe09e557497cedb545",
+        "v0": "a09d9eed1a6323a32e2cb115692f1763dbeaa9d07cad99f04bf83f8800dd3420"
+      },
+      {
+        "u0": "3dcc1922cc2d37a8dad6d1c9c9d30dab4cc981f8e58ecbfa15369f2b5958775e",
+        "v0": "eb00d61d7b3d569159ceb8055e1d4b858271cdce2dca611310c7798873942e8d"
+      },
+      {
+        "u0": "62f02f6a971afe737a355d599c931f67e9a054ae2b05d3bc4da92d5e1cd866e9",
+        "v0": "86a09679b447074c139b82a105edca2f6d95d0eb0cd7cc8d37719fb7a4f0775c"
+      },
+      {
+        "u0": "f21f154c866377ea52a623d243d22f4182017e30564ac3f84a935c420d3a9958",
+        "v0": "9ddb902f6c4a6a4c7052d05c578f3f230455262632fe85b42adb8964f81ce685"
+      }
+    ]
+  },
+  "files": {
+    "ellipse-h0.01.npz": "af6e4f3315321e2b8c0bfc82860f7184663f7764db8a9adf140c874f11c76f1c",
+    "ellipse-h0.02.npz": "299f171237869227373b199e30eadd71a37a19df6545531186f7eb3bfc067112",
+    "ellipse-h0.04.npz": "3fd92687171823c64fd51bf49a30d2ff8f24c19bb4b2db236f60c611aab72815",
+    "ellipse-h0.08.npz": "2b1d2d7a66bc7061f91990971bfc51f08f94f140568b3310c6f38d4188456d04",
+    "ellipse-h0.12.npz": "9ad1617f2744fa12f4a539a833a6e395cb9121f5f4ed238d32178c8b5109db1f",
+    "ellipse-basis.npz": "92ea1df6c00cf8118ffdfd1d26c180e15043957b16454aaaaac512530579029e",
+    "ellipse-reference.npz": "1563527ff96a5d6f818da042f573ed902dc3c751f7645f618b4ec7bff9428845"
+  },
+  "seconds": 146.78831074992195,
+  "parent_certification_id": "f283e4371f7209b15a01bf9a1db536dad19203664a2b989a5eff9fe45e695171",
+  "source_revision": {
+    "files": {
+      "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+      "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+      "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+      "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+      "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+      "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+      "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+    },
+    "dependencies": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "triangle": "20250106",
+      "shapely": "2.2.0"
+    },
+    "scientific_sha": "13dd6b14d78ffd1fd89ecf9b98d38b9ec0303a9a5df5914417121f23940c43b5"
+  }
+}

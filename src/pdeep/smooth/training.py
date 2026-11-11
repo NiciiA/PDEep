@@ -122,10 +122,14 @@ class Manifest:
     def identity(self):return digest(asdict(self))
 
 class Engine(TrainingEngine):
-    def _authorize(self,families=None):return authorize(self.certificate,benchmark=self.config.benchmark,pdes=self.config.pdes,families=self.config.training_families if families is None else families,normalizer_identity=self.normalizers.identity)
-    def __init__(self,config,run_root,*,certificate=None,monitor=None,model=None,persistence=None,allow_existing_run=False):
-        self.config=config;self.certificate=load_record() if certificate is None else certificate;self.normalizers=normalizers(self.certificate);self._authorize()
-        require(config.source_id==implementation_identity(),'Training implementation changed after configuration/preview; restart/review configuration before launch')
+    def _authorize(self,families=None):return authorize(getattr(self,'execution_certificate',self.certificate),benchmark=self.config.benchmark,pdes=self.config.pdes,families=self.config.training_families if families is None else families,normalizer_identity=self.normalizers.identity)
+    def __init__(self,config,run_root,*,certificate=None,monitor=None,model=None,persistence=None,allow_existing_run=False,execution_certificate=None):
+        self.execution_certificate=execution_certificate
+        self.config=config;self.certificate=load_record() if certificate is None else certificate;self.normalizers=normalizers(self.certificate)
+        if self.execution_certificate is None:self.execution_certificate=self.certificate
+        self._authorize()
+        from .compatibility import approved_predecessor
+        require(approved_predecessor(config.source_id),'Training implementation changed after configuration/preview; restart/review configuration before launch')
         register();self.state=TrainingState(config.architecture,config.run_id,stage='G1_smooth-manual');self.monitor=monitor or LiveMonitor(enabled=False)
         self.run_dir=Path(run_root)/BENCHMARK_ID/'runs'/config.architecture/config.run_id
         require(allow_existing_run or not self.run_dir.exists(),'run exists; select explicit resume or new run_tag')
@@ -194,7 +198,7 @@ class Engine(TrainingEngine):
     def save_checkpoint(self):
         start=time.monotonic();self._authorize();require(not self.state.accumulation_active and self.state.phase!='failed','checkpoint requires completed optimizer boundary')
         from ..diagnostics import source_identity
-        meta={'artifact_type':'training_checkpoint','architecture_id':self.config.architecture,'run_id':self.config.run_id,'scientific_schema':SCHEMA,'benchmark':BENCHMARK_ID,'config':asdict(self.config),'model_config':asdict(self.model.config),'normalizers':self.normalizers.asdict(),'validation':asdict(self.manifest),'certificate':self.certificate,'implementation_identity':implementation_identity(),'source':source_identity(Path(__file__).resolve().parents[3]),'runtime':__import__('pdeep.runtime',fromlist=['environment_report']).environment_report(),'successful_update':self.state.successful,'split_identity':split_manifest()['identity'],'experiment_kind':self.config.preset,'result_status':'untrained nonresearch verification artifact' if self.state.successful==0 or self.config.capacity=='verification' else 'manual full-train-split bounded experiment; finite per-case query banks; generalization requires evaluation' if self.config.cases_per_geometry is None else 'manual finite diagnostic pool; generalization requires evaluation','numerical_reference_certified':True}
+        meta={'artifact_type':'training_checkpoint','architecture_id':self.config.architecture,'run_id':self.config.run_id,'scientific_schema':SCHEMA,'benchmark':BENCHMARK_ID,'config':asdict(self.config),'model_config':asdict(self.model.config),'normalizers':self.normalizers.asdict(),'validation':asdict(self.manifest),'certificate':self.certificate,'execution_qualification':self.execution_certificate,'implementation_identity':implementation_identity(),'source':source_identity(Path(__file__).resolve().parents[3]),'runtime':__import__('pdeep.runtime',fromlist=['environment_report']).environment_report(),'successful_update':self.state.successful,'split_identity':split_manifest()['identity'],'experiment_kind':self.config.preset,'result_status':'untrained nonresearch verification artifact' if self.state.successful==0 or self.config.capacity=='verification' else 'manual full-train-split bounded experiment; finite per-case query banks; generalization requires evaluation' if self.config.cases_per_geometry is None else 'manual finite diagnostic pool; generalization requires evaluation','numerical_reference_certified':True}
         payload={'model':self.model.state_dict(),'optimizer':self.optimizer.state_dict(),'scheduler':self.scheduler.state_dict(),'training_state':asdict(self.state),'rng':capture_rng(self.rng_generators),'sampler':self.sampler.state_dict(self.state.sampler_cursor),'best_validation_model':self.best_validation_model_state,'model_config':asdict(self.model.config),'normalizers':self.normalizers.asdict()}
         path=write_artifact(self.run_dir/'checkpoints',f'smooth-update-{self.state.successful:08d}',meta,payload,required=tuple(payload),idempotent=True)
         self.state.last_checkpoint=str(path);self.state.checkpoint_history.append({'step':self.state.successful,'path':str(path)})
@@ -207,12 +211,14 @@ def resume(path,run_root,*,device=None,persistence=None,monitor=None):
     record,payload=read_payload(path,kind='training_checkpoint',required=('model','optimizer','scheduler','training_state','rng','sampler','normalizers'))
     require(record.get('scientific_schema')==SCHEMA,'checkpoint is not G1_smooth_v1; old G1/T1 artifacts are never reinterpreted')
     require(record['runtime']['dependencies']['torch']==torch.__version__,'Torch version differs; exact resume is not certified')
-    require(record['implementation_identity']==implementation_identity(),'implementation/model/loss changed; exact resume requires matching source')
+    from .compatibility import approved_predecessor,execution_certificate
+    require(approved_predecessor(record['implementation_identity']),'implementation/model/loss changed; exact resume requires matching source or the explicit verified input-loader repair')
+    qualification=execution_certificate(record.get('execution_qualification',record['certificate']))
     cfg=record['config'];cfg={**cfg,**{k:tuple(cfg[k]) for k in ('pdes','probabilities','training_families') if k in cfg}}
     require(device is None or select_device(device)==cfg['device'],'exact continuation requires same device type; cross-device migration is a separate experiment')
     config=Config(**cfg);n=normalizers(record['certificate']);require(n.identity==payload['normalizers']['identity'],'checkpoint normalization mismatch')
     model=GeometryModel(ModelConfig(**payload['model_config']),n).to(config.device);model.load_state_dict(payload['model'],strict=True)
-    engine=Engine(config,run_root,certificate=record['certificate'],model=model,persistence=persistence,monitor=monitor,allow_existing_run=True)
+    engine=Engine(config,run_root,certificate=record['certificate'],execution_certificate=qualification,model=model,persistence=persistence,monitor=monitor,allow_existing_run=True)
     require(digest(record['validation'])==digest(asdict(engine.manifest)) and record['split_identity']==split_manifest()['identity'],'checkpoint dataset/config/validation mismatch')
     engine.optimizer.load_state_dict(payload['optimizer']);engine.scheduler.load_state_dict(payload['scheduler']);engine.state=TrainingState(**payload['training_state']);engine.state.phase='ready'
     require(digest(payload['sampler'])==digest(engine.sampler.state_dict(engine.state.sampler_cursor)),'checkpoint data ordering mismatch')

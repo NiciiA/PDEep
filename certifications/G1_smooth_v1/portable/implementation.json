@@ -1,0 +1,23 @@
+{
+  "schema": "byte-exact-input-loader-refactor-v1",
+  "parent_physics_files": {
+    "src/pdeep/geometric/domain.py": "bf7d8f8604f0a5999be4174c451212b5dbefea1951070ccda5366b5ccacea4a8",
+    "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+    "src/pdeep/wave_fidelity/fields.py": "bf83319e45b42024cb0c3f856c01f5f6417c2b43de83dc27033a4c606493c6bb",
+    "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+    "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+    "src/pdeep/smooth/reference.py": "67da914d6b89bb7b8d22e12b1cfc5964fd54012ac7961b49d223d1570d4ec507",
+    "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+  },
+  "physics_files": {
+    "src/pdeep/geometric/domain.py": "43e06faf47b6eb8afbbeceed88dfe7ae06d92cad70536a285459e768936b78b1",
+    "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+    "src/pdeep/wave_fidelity/fields.py": "ba92043f2f8245d13d6266c1bfbf711898478ff460b83a613578dce429ade4b8",
+    "src/pdeep/wave_fidelity/reference.py": "6a5e3fb0b2f8f853c93039076c8a8cd870222f996c37c3eda690320366606b8a",
+    "src/pdeep/smooth/definition.py": "44074b2b2a5616e58bd399210e9f39f5bb48bb42fe7c932cb0176d73975883b3",
+    "src/pdeep/smooth/reference.py": "9afcd9a127714d5019391e27493031c3c7e29bfd0fc4721b4a593499ef1278cb",
+    "src/pdeep/smooth/data.py": "96656b103ff13b151d6ae4100199455f7637112a6dfd0535f82e998276d4df94"
+  },
+  "reason": "Only input loading/constructor resolution changed. Original certified mesh arrays and C3 bases are frozen with exact original IDs. Numerical PDE kernels, priors, coefficients, losses and time integrators are unchanged. Bounded current-runtime qualification is required.",
+  "identity": "de766e6fcc69da122b29d453a8d4b0bbe23051a4a822376de23db939aee6e9c9"
+}
