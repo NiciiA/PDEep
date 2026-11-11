@@ -14,10 +14,13 @@ PROOF=ROOT/'certifications/G1_smooth_v1/portable/diagnostic_workflow_execution.j
 
 
 def approved_workflow_predecessor(identity):
-    if not PROOF.exists():return False
     from ..smooth.training import implementation_identity
-    r=json.loads(PROOF.read_text())
-    require(digest({k:v for k,v in r.items() if k!='identity'})==r['identity'],'workflow compatibility evidence checksum mismatch')
-    if implementation_identity()!=r['new_implementation'] or identity not in r['approved_predecessors']:return False
-    require(all(sha256(ROOT/p)==v for p,v in r['unchanged_files'].items()),'workflow-only compatibility requires unchanged models/losses/numerics/shared optimizer')
-    return True
+    paths=[PROOF.parent/'continuous_query_execution.json',PROOF]
+    for path in paths:
+        if not path.exists():continue
+        r=json.loads(path.read_text())
+        require(digest({k:v for k,v in r.items() if k!='identity'})==r['identity'],'workflow compatibility evidence checksum mismatch')
+        if implementation_identity()!=r['new_implementation'] or identity not in r['approved_predecessors']:continue
+        require(all(sha256(ROOT/p)==v for p,v in r['unchanged_files'].items()),'execution compatibility requires unchanged models/losses/numerics/shared optimizer')
+        return True
+    return False

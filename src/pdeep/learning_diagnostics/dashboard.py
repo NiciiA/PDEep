@@ -18,7 +18,7 @@ class Dashboard:
         v=monitor_snapshot(config,state,self._step,self._validation)
         v.update(experiment=getattr(config,'experiment',config.preset), geometry=config.training_families,
                  progress_percent=100*state.successful/config.updates,
-                 diagnostic_metrics=getattr(self,'diagnostic_metrics',{}))
+                 diagnostic_metrics=getattr(self,'diagnostic_metrics',{}),performance=getattr(self,'performance',{}))
         self.latest=v
         event={'run':state.run_id,'update':state.successful,'phase':state.phase,'checkpoint':state.last_checkpoint,'Drive':v['Drive_sync']}
         if not self.recent or event != self.recent[-1]: self.recent.append(event)
@@ -36,7 +36,7 @@ class Dashboard:
     def render(self,v):
         d=v.get('diagnostic_metrics',{})
         fields={k:v.get(k) for k in ('architecture','experiment','geometry','PDE_mixture','run_id','successful','requested','progress_percent','phase','elapsed_seconds','ETA_seconds','current_objective','rolling_objective','learning_rate','gradient_before_clip','gradient_after_clip','latest_validation','checkpoint','Drive_sync','failed','skipped','last_error')}
-        fields.update(raw_losses=v.get('unweighted'),weighted_losses=v.get('weighted'),per_quantity=d.get('field'),sensor=d.get('sensors'))
+        fields.update(performance=v.get('performance'),raw_losses=v.get('unweighted'),weighted_losses=v.get('weighted'),per_quantity=d.get('field'),sensor=d.get('sensors'))
         text=json.dumps(fields,indent=2,default=str)+ '\nRecent events: '+json.dumps(list(self.recent),default=str)
         self.render_count+=1
         if self.renderer: self.handle=self.renderer(text,self.handle); return

@@ -75,8 +75,8 @@ suppresses raw Git/pip output and refuses credential-bearing URLs.
    A single dashboard updates in place. **Run All with enabled training can also train.**
    The saved defaults do not optimize. Diagnostic training remains for the user to execute.
 6. The optional mixed/bounded workflow below retains the original APIs. Its
-   `tiny_overfit` fixes six cases but resamples training queries; the new single-case
-   diagnostic freezes main queries as well. Keep `RUN_MODE="preview"` while using
+   `tiny_overfit` fixes six cases but resamples training queries; the single-case
+   diagnostic offers fixed or resampled continuous queries while freezing physics/sensors. Keep `RUN_MODE="preview"` while using
    the diagnostic section. Deliberately selected bounded runs remain manual;
    large CPU64 reference-bank warm-up can take hours. No research training starts automatically.
    See [exact configurations and the diagnosis guide](docs/geometry_learning_diagnostics.md).
@@ -856,3 +856,11 @@ See [the fixed-case diagnostic guide](docs/geometry_learning_diagnostics.md) for
 read-only inspection of existing trained checkpoints, certificate reuse, direct synchronous launch and resume.
 Both saved run modes are `preview`. **Run All with `train`/`resume` enabled can train**; no launch button is required.
 Missing/incompatible certification blocks training and never automatically launches numerical qualification.
+
+
+Continuous-coordinate diagnostics now default to `QUERY_MODE="resampled"`,
+`QUERY_COUNT=4096`, with a safe preview and one non-optimizing performance preflight.
+See [the query/GPU/striping guide](docs/continuous_query_diagnostics.md) for retained
+P4 reference evaluation, matched update/query budgets, CUDA placement/memory/AMP
+checks, legacy fixed resume and read-only auditing of trained grid artifacts.
+No multi-run comparison was launched while implementing this workflow.

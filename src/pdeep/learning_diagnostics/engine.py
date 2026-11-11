@@ -21,6 +21,11 @@ from .data import FixedSampler,EXPERIMENTS
 from .metrics import reconstruction,gradient_terms,representation
 
 SCHEMA='G1_smooth-fixed-TRAIN-learning-diagnostics-v1'
+QUERY_FIELDS=('query_revision','query_mode','query_time_policy','query_sampler_seed','query_chunk','query_checkpointing','amp_mode','resolved_amp_mode','memory_target_gb','synchronize_timings')
+LEGACY_DIAGNOSTIC_SOURCE='484f281114c3528d89c218d6cb6e9e61ea7f429b8315eaca9658587661678192'
+
+def approved_diagnostic(config):
+    return config.diagnostic_source_id==diagnostic_source() or (config.diagnostic_source_id==LEGACY_DIAGNOSTIC_SOURCE and config.query_revision=='legacy-fixed-v1' and config.query_mode=='fixed' and config.amp_mode=='off')
 
 
 def diagnostic_source():
@@ -38,6 +43,22 @@ class DiagnosticConfig(Config):
     validation_every: int=50
     checkpoint_every: int=100
     instrumentation_every: int=50
+    query_revision: str='legacy-fixed-v1'
+    query_mode: str='fixed'
+    query_time_policy: str='stratified'
+    query_sampler_seed: int=42
+    query_chunk: int=512
+    query_checkpointing: bool=True
+    amp_mode: str='off'
+    resolved_amp_mode: str='off'
+    memory_target_gb: float=11.
+    synchronize_timings: bool=False
+    @property
+    def identity(self):
+        values=asdict(self)
+        if self.query_revision=='legacy-fixed-v1':
+            for k in QUERY_FIELDS:values.pop(k,None)
+        return digest(values)
     def __post_init__(self):
         super().__post_init__()
         require(self.experiment in EXPERIMENTS,'unknown learning diagnostic')
@@ -45,6 +66,11 @@ class DiagnosticConfig(Config):
         require(self.objective_variant!='FIELD_ONLY' or self.architecture=='C_GEO','field-only ablation is C_GEO')
         require(self.instrumentation_every>0,'positive instrumentation cadence required')
         require(len(self.pdes)==len(self.training_families)==1 and self.effective_batch==1,'fixed single TRAIN case required')
+        require(self.query_revision in {'legacy-fixed-v1','continuous-queries-v2'},'unknown query execution revision')
+        require(self.query_mode in {'fixed','resampled','dense_resampled'} and self.query_time_policy in {'stratified','mixture'},'unknown training query policy')
+        require(self.query_revision!='legacy-fixed-v1' or self.query_mode=='fixed','legacy checkpoints cannot silently change sampling')
+        require(2<=self.query_count<=16384 and self.query_chunk>0 and 0<self.memory_target_gb<=12,'invalid bounded query/memory budget')
+        require(self.amp_mode in {'off','auto','bf16'} and self.resolved_amp_mode in {'off','bf16'},'unsupported neural AMP policy')
         if not self.diagnostic_source_id:object.__setattr__(self,'diagnostic_source_id',diagnostic_source())
 
 
@@ -58,20 +84,52 @@ class FieldOnly(Adapter):
 class DiagnosticEngine(Engine):
     def __init__(self,config,root,*,data,**kwargs):
         require(config.data_identity==data.identity,'fixed data identity differs from reviewed configuration')
-        require(config.diagnostic_source_id==diagnostic_source(),'diagnostic source changed after preview')
+        require(approved_diagnostic(config),'diagnostic source changed after preview')
         self.data=data
         super().__init__(config,Path(root)/'learning_diagnostics'/config.experiment/config.objective_variant,**kwargs)
         self.sampler=FixedSampler(data,config)
-        if config.objective_variant=='FIELD_ONLY':self.adapter=FieldOnly(config.architecture,self.adapter.weak)
-        self.manifest=Manifest(((data.case.pde,data.case.family,'train',data.case.index),),self.normalizers.identity,self.certificate['certification_id'],'fixed TRAIN memorization; independent queries, NOT generalization')
+        if config.query_revision!='legacy-fixed-v1':
+            from .queries import QuerySampler
+            from .query_loss import QueryAdapter
+            self.sampler=QuerySampler(data,config)
+            self.adapter=QueryAdapter(config.architecture,self.adapter.weak,chunk=config.query_chunk,checkpointing=config.query_checkpointing,field_only=config.objective_variant=='FIELD_ONLY',amp=config.resolved_amp_mode)
+        self.latest_performance={};self.performance_preflight={};self._device_events={};self._device_phase=None
+        if config.objective_variant=='FIELD_ONLY' and config.query_revision=='legacy-fixed-v1':self.adapter=FieldOnly(config.architecture,self.adapter.weak)
+        self.manifest=Manifest(((data.case.pde,data.case.family,'train',data.case.index),),self.normalizers.identity,self.certificate['certification_id'],'fixed TRAIN memorization; independent queries, NOT generalization' if config.query_revision=='legacy-fixed-v1' else 'fixed TRAIN physical case; '+config.query_mode+' queries; independent coordinates, NOT physical-case generalization')
         self.state.rng_sampler_state=self.sampler.state_dict(self.state.sampler_cursor)
         atomic_json(self.run_dir/'fixed_data.json',{'identity':data.identity,'identities':data.identities,'bank':data.path,'case':data.case.manifest})
         atomic_json(self.run_dir/'validation_manifest.json',asdict(self.manifest))
 
+    def _notify(self,step=None,validation=None):
+        if hasattr(self,'_device_events') and self.config.query_revision!='legacy-fixed-v1' and self.config.device.startswith('cuda'):
+            phase=self.state.phase
+            if phase!=self._device_phase and phase in {'forward','backward','optimizer','ready'}:
+                if phase=='forward':self._device_events={}
+                self._device_events[phase]=torch.cuda.Event(enable_timing=True);self._device_events[phase].record()
+            self._device_phase=phase
+        return super()._notify(step,validation)
+
     def update(self,batch=None):
+        if self.config.query_revision!='legacy-fixed-v1' and self.config.device.startswith('cuda'):
+            require(self.performance_preflight.get('config_identity')==self.config.identity,'CUDA training requires the matching bounded memory/AMP preflight before updates')
+            torch.cuda.reset_peak_memory_stats(self.config.device)
         capture=self.state.successful%self.config.instrumentation_every==0
         before={n:p.detach().clone() for n,p in self.model.named_parameters()} if capture else {}
-        report=super().update(batch)
+        start=time.perf_counter()
+        if self.config.query_revision=='legacy-fixed-v1':report=super().update(batch)
+        else:
+            from .performance import asynchronous_update,memory,utilization
+            from .runtime import using
+            self._authorize()
+            try:
+                with using(self.adapter.cache):report=asynchronous_update(self,batch)
+            finally:self.adapter.cache.clear_queries()
+            seconds=time.perf_counter()-start
+            spans={}
+            for a,b in [('forward','backward'),('backward','optimizer'),('optimizer','ready')]:
+                if a in self._device_events and b in self._device_events and self._device_events[b].query():spans[a]=self._device_events[a].elapsed_time(self._device_events[b])/1000
+            self.latest_performance={'CUDA_event_phase_span_seconds':spans,'CUDA_event_scope':'stream elapsed spans include launch/CPU gaps; not kernel-active utilization','memory':memory(self.config.device),'utilization':utilization(self.config.device),'queries_per_update':report.counts['valid_queries'],'queries_per_second':report.counts['valid_queries']/seconds,'step_wall_seconds':seconds,'phase_timing_scope':'CPU wall/enqueue; CUDA phase timings only in isolated preflight','reference':self.sampler.last,'cache':self.adapter.last,'clipped_fraction':sum(r['gradient_before_clip']>self.config.grad_clip_norm for r in self.state.recent_steps)/max(1,len(self.state.recent_steps))}
+            self._log('performance.jsonl',self.latest_performance);self.monitor.performance=self.latest_performance;self._notify(report)
         if capture:
             rows={}
             for n,p in self.model.named_parameters():
@@ -83,7 +141,16 @@ class DiagnosticEngine(Engine):
 
     def validate(self,**kwargs):
         require(not self.state.accumulation_active,'validation only at optimizer boundary')
-        start=time.perf_counter(); m=reconstruction(self.model,self.data)
+        start=time.perf_counter()
+        if self.config.query_revision=='legacy-fixed-v1':m=reconstruction(self.model,self.data)
+        else:
+            from ..geometric.data import Batch
+            from .runtime import using
+            b=Batch((self.data.case,),self.sampler.observations,self.sampler.fixed_queries,self.normalizers)
+            d=Batch((self.data.case,),self.sampler.observations,self.sampler.independent,self.normalizers)
+            try:
+                with using(self.adapter.cache):m=reconstruction(self.model,self.data,prepared_batches=(b,d))
+            finally:self.adapter.cache.clear_queries()
         rows=[{'pde':self.data.case.pde,'family':self.data.case.family,'case_id':self.data.case.case_id,'quantity':q,**r} for q,r in m['field'].items()]
         value=float(np.mean([r['standardized_MSE'] for r in rows])); mid=state_identity(self.model)
         report=ValidationReport(self.config.architecture,mid,self.manifest.identity,self.manifest.name,self.state.successful,{'common':{'field_normalized_MSE':value}},m,{'cases':1},time.perf_counter()-start,self.config.device,'float32')
@@ -99,7 +166,7 @@ class DiagnosticEngine(Engine):
         start=time.monotonic()
         from ..runtime import environment_report
         from ..diagnostics import source_identity
-        meta={'artifact_type':'training_checkpoint','architecture_id':self.config.architecture,'run_id':self.config.run_id,'scientific_schema':SCHEMA,'benchmark':self.config.benchmark,'config':asdict(self.config),'certificate':self.certificate,'execution_qualification':self.execution_certificate,'implementation_identity':implementation_identity(),'diagnostic_source_id':diagnostic_source(),'fixed_data_identity':self.data.identity,'fixed_case':self.data.case.manifest,'fixed_data_path':self.data.path,'runtime':environment_report(),'source':source_identity(Path(__file__).resolve().parents[3]),'successful_update':self.state.successful,'result_status':'TRAIN memorization only; not research/generalization certification'}
+        meta={'artifact_type':'training_checkpoint','architecture_id':self.config.architecture,'run_id':self.config.run_id,'scientific_schema':SCHEMA,'benchmark':self.config.benchmark,'config':asdict(self.config),'certificate':self.certificate,'execution_qualification':self.execution_certificate,'implementation_identity':implementation_identity(),'diagnostic_source_id':self.config.diagnostic_source_id,'executing_diagnostic_source_id':diagnostic_source(),'fixed_data_identity':self.data.identity,'fixed_case':self.data.case.manifest,'fixed_data_path':self.data.path,'runtime':environment_report(),'source':source_identity(Path(__file__).resolve().parents[3]),'successful_update':self.state.successful,'result_status':'TRAIN memorization only; not research/generalization certification'}
         payload={'model':self.model.state_dict(),'model_config':asdict(self.model.config),'normalizers':self.normalizers.asdict(),'optimizer':self.optimizer.state_dict(),'scheduler':self.scheduler.state_dict(),'training_state':asdict(self.state),'rng':capture_rng(self.rng_generators),'sampler':self.sampler.state_dict(self.state.sampler_cursor),'best_validation_model':self.best_validation_model_state}
         path=write_artifact(self.run_dir/'checkpoints',f'diagnostic-update-{self.state.successful:08d}',meta,payload,required=tuple(payload),idempotent=True)
         self.state.last_checkpoint=str(path);self.state.checkpoint_history.append({'step':self.state.successful,'path':str(path)})
@@ -130,8 +197,10 @@ class DiagnosticEngine(Engine):
 def resume_diagnostic(path,root,*,data,certificate,config,persistence=None,monitor=None):
     meta,p=read_payload(path,kind='training_checkpoint',architecture=config.architecture,required=('model','optimizer','scheduler','training_state','sampler','rng','normalizers','model_config'))
     require(meta.get('scientific_schema')==SCHEMA,'select a diagnostic checkpoint; mixed-pool checkpoints are not implicit warm starts')
-    require(meta['config']==__import__('json').loads(__import__('json').dumps(asdict(config))),'diagnostic resume configuration mismatch')
-    require(meta['diagnostic_source_id']==diagnostic_source() and meta['implementation_identity']==implementation_identity(),'exact resume implementation mismatch')
+    saved={**meta['config'],**{k:tuple(meta['config'][k]) for k in ('pdes','probabilities','training_families')}}
+    require(asdict(DiagnosticConfig(**saved))==asdict(config),'diagnostic resume configuration mismatch')
+    from ..smooth.compatibility import approved_predecessor
+    require(approved_diagnostic(config) and meta['diagnostic_source_id']==config.diagnostic_source_id and approved_predecessor(meta['implementation_identity']),'exact resume implementation mismatch')
     require(meta['fixed_data_identity']==data.identity,'fixed case/observations/queries differ')
     require(meta['execution_qualification']['certification_id']==certificate['certification_id'],'resume numerical runtime/certificate mismatch')
     require(meta['runtime']['dependencies']['torch']==torch.__version__,'exact resume Torch version mismatch')

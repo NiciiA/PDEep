@@ -23,14 +23,22 @@ def migrate_unaffected_checkpoint(path,destination):
     old=record['geometry_source'];new=geometry_identity();changed={k for k in set(old)|set(new) if old.get(k)!=new.get(k)}
     # The later portable-input repair adds only a verified array loader. It is
     # admitted by an exact source manifest AND the unchanged-mesh checks below.
-    portable_ok=False
+    portable_ok=False;representation_cache_ok=False
     proof=Path(__file__).resolve().parents[3]/'certifications/G1_smooth_v1/portable/execution.json'
     if proof.exists():
         import json
         from ..core import digest
         r=json.loads(proof.read_text())
-        portable_ok=r.get('identity')==digest({k:v for k,v in r.items() if k!='identity'}) and new==r.get('repaired_geometry_sources')
+        intact=r.get('identity')==digest({k:v for k,v in r.items() if k!='identity'})
+        expected=r.get('repaired_geometry_sources',{})
+        normalized=dict(new)
+        if intact and old.get('representation.py')==expected.get('representation.py'):
+            from ..learning_diagnostics.execution_compatibility import approved_workflow_predecessor
+            representation_cache_ok=approved_workflow_predecessor(r['repaired_implementation'])
+            if representation_cache_ok:normalized['representation.py']=expected['representation.py']
+        portable_ok=intact and normalized==expected
     allowed={'domain.py','training.py','portable.py'} if portable_ok else {'domain.py','training.py'}
+    if representation_cache_ok:allowed.add('representation.py')
     require(bool(changed) and changed<=allowed and old['domain.py'] in {OLD_DOMAIN,FIXED_DOMAIN} and (new['domain.py']==FIXED_DOMAIN or portable_ok) and
             old['training.py'] in {OLD_TRAINING,GATED_TRAINING} and new['training.py']==GATED_TRAINING,
             'migration requires only the reviewed mesher correction and research-launch gate; all scientific model/data code must match')
@@ -46,7 +54,7 @@ def migrate_unaffected_checkpoint(path,destination):
                     'original_manifest':str(Path(path).resolve()),'old_domain_sha256':old['domain.py'],'fixed_domain_sha256':new['domain.py'],
                     'old_training_sha256':old['training.py'],'gated_training_sha256':GATED_TRAINING,
                     'training_difference':'run() rejects uncertified research budgets; update arithmetic unchanged',
-                    'verified_unchanged_meshes':verified,'weights_optimizer_RNG_changed':False})
+                    'representation_cache_compatibility':representation_cache_ok,'representation_source':new.get('representation.py'),'verified_unchanged_meshes':verified,'weights_optimizer_RNG_changed':False})
     migrated=write_artifact(destination,None,metadata,payload,required=tuple(payload),idempotent=True)
     copied,_=read_payload(migrated,kind='training_checkpoint')
     require(copied['payload_tree_identity']==record['payload_tree_identity'],'migration changed payload state')

@@ -18,7 +18,10 @@ from ..encoding import EquationVocabulary,pack_graphs,OPS,STATUSES,ROLES,NUMERIC
 from ..benchmarks import benchmark
 
 
-def tensor(a,like):return torch.as_tensor(np.array(a,copy=True),device=like.device,dtype=like.dtype)
+def tensor(a,like):
+    from ..learning_diagnostics.runtime import current
+    cache=current()
+    return cache.convert(a,like) if cache is not None else torch.as_tensor(np.array(a,copy=True),device=like.device,dtype=like.dtype)
 
 def pool(h,mask):return torch.where(mask[...,None],h,0.).sum(1)/mask.sum(1,keepdim=True).clamp_min(1)
 
@@ -67,6 +70,9 @@ def layout(mesh,coarse=64,fine=256):
 
 
 def barycentric(mesh,x):
+    from ..learning_diagnostics.runtime import current
+    cache=current()
+    if cache is not None:return cache.barycentric(mesh,x)
     # The integer cell index has no derivative; coordinates DO. On a shared
     # edge both incident interpolants have identical trace, unlike nearest-node.
     tolerance=4*torch.finfo(x.dtype).eps*max(1.,np.abs(mesh.vertices).max())
@@ -113,7 +119,10 @@ class TypedGraph(nn.Module):
         self.numeric=nn.Sequential(nn.Linear(len(NUMERIC_NAMES),d),nn.SiLU(),nn.Linear(d,d));self.relations=nn.Embedding(len(OPS)*4,d)
         self.messages=nn.ModuleList(nn.Sequential(nn.Linear(3*d,2*d),nn.SiLU(),nn.Linear(2*d,d)) for _ in range(layers));self.updates=nn.ModuleList(Residual(d) for _ in range(layers))
     def forward(self,problems,device):
-        b=pack_graphs(tuple(p.symbolic for p in problems),self.vocabulary).to(device);h=self.types(b.node_type)+self.quantities(b.quantity)+self.status(b.status)+self.roles(b.role)+self.numeric(b.numeric)
+        from ..learning_diagnostics.runtime import current
+        cache=current()
+        b=cache.graphs(problems,self.vocabulary,device) if cache is not None else pack_graphs(tuple(p.symbolic for p in problems),self.vocabulary).to(device)
+        h=self.types(b.node_type)+self.quantities(b.quantity)+self.status(b.status)+self.roles(b.role)+self.numeric(b.numeric)
         h=h*b.valid[...,None]
         for message,update in zip(self.messages,self.updates):
             aggregate=torch.zeros_like(h);degree=torch.zeros_like(h[...,:1])
@@ -130,14 +139,20 @@ class MeshEncoder(nn.Module):
     def __init__(self,d,layers):
         super().__init__();self.input=nn.Linear(14,d);self.messages=nn.ModuleList(nn.Sequential(nn.Linear(3*d+3,2*d),nn.SiLU(),nn.Linear(2*d,d)) for _ in range(layers));self.updates=nn.ModuleList(Residual(d) for _ in range(layers))
     def forward(self,lay,context,conditions):
-        tags=lay.mesh.features(lay.mesh.vertices)['boundary_tag']
-        bc=np.array([[float(conditions[int(k)].kind=='DIRICHLET'),float(conditions[int(k)].kind=='NEUMANN'),conditions[int(k)].value] for k in tags])
-        h=self.input(tensor(np.column_stack((lay.node_features,bc)),context))+context;edge=np.concatenate((lay.mesh.edge_index,lay.mesh.edge_index[::-1]),1);src,dst=torch.as_tensor(edge,device=h.device,dtype=torch.long)
-        delta=tensor(lay.mesh.vertices[edge[0]]-lay.mesh.vertices[edge[1]],h)/np.sqrt(lay.mesh.cell_areas.sum());ef=torch.cat((delta,delta.norm(dim=-1,keepdim=True)),-1)
-        deg=torch.bincount(dst,minlength=len(h)).clamp_min(1).to(h.dtype)
+        from ..learning_diagnostics.runtime import current
+        cache=current()
+        if cache is not None:
+            features,src,dst,ef,deg,mass=cache.mesh_inputs(lay,context,conditions)
+            h=self.input(features)+context
+        else:
+            tags=lay.mesh.features(lay.mesh.vertices)['boundary_tag']
+            bc=np.array([[float(conditions[int(k)].kind=='DIRICHLET'),float(conditions[int(k)].kind=='NEUMANN'),conditions[int(k)].value] for k in tags])
+            h=self.input(tensor(np.column_stack((lay.node_features,bc)),context))+context;edge=np.concatenate((lay.mesh.edge_index,lay.mesh.edge_index[::-1]),1);src,dst=torch.as_tensor(edge,device=h.device,dtype=torch.long)
+            delta=tensor(lay.mesh.vertices[edge[0]]-lay.mesh.vertices[edge[1]],h)/np.sqrt(lay.mesh.cell_areas.sum());ef=torch.cat((delta,delta.norm(dim=-1,keepdim=True)),-1)
+            deg=torch.bincount(dst,minlength=len(h)).clamp_min(1).to(h.dtype)
         for message,update in zip(self.messages,self.updates):
             msg=message(torch.cat((h[src],h[dst],ef,context.expand(len(src),-1)),-1));agg=torch.zeros_like(h).index_add(0,dst,msg)/deg[:,None];h=update(h+agg)
-        mass=tensor(lay.mass_weights,h);return h,(h*mass[:,None]).sum(0)/mass.sum()
+        mass=mass if cache is not None else tensor(lay.mass_weights,h);return h,(h*mass[:,None]).sum(0)/mass.sum()
 
 
 class Coordinates(nn.Module):

@@ -45,6 +45,7 @@ class FixedData:
     normalizers: object
     identities: dict
     path: str
+    cached_reference: object=None
     @property
     def identity(self): return digest(self.identities)
     def batch(self,device='cpu',diagnostic=False):
@@ -54,7 +55,7 @@ class FixedData:
             require(token_id(t)==self.identities[k],f'{k} changed in frozen experiment')
 
 
-def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,grid_size=64,conditioning_h=.12,pde=None,family=None,paired=False):
+def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,grid_size=64,conditioning_h=.12,pde=None,family=None,paired=False,cache_reference=False):
     require(experiment in EXPERIMENTS,'unknown diagnostic experiment')
     defaults={'poisson_rectangle':('poisson','rectangle'),'heat_single':('heat','square'),'wave_single':('wave','square')}
     dp,dg=defaults.get(experiment,('poisson','square')); pde=pde or dp; family=family or dg
@@ -64,6 +65,8 @@ def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,gri
     index=4*((seed+int(paired))%3000)+SEEN.index(family)
     c=Case(family,pde,'train',index,conditioning_h)
     description={'schema':'fixed-TRAIN-learning-data-v1','case':c.manifest,'seed':seed,'observation_set':seed,'training_queries':count,'independent_grid_size':grid_size,'times':TIMES,'normalizers':norms.identity,'certificate':record['certification_id'],'query_policy':'strict fixed main queries, independent continuous-time grid'}
+    if cache_reference:description['reference_evaluation']='cached-certified-P4-C1-v1'
+    cached=None
     key=digest(description); root=Path(root); path=root/(key+'.json')
     if path.exists():
         meta,p=read_payload(path,kind='diagnostic_bundle',required=('observation','training','diagnostic','clean_observations','identities'))
@@ -72,7 +75,11 @@ def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,gri
         designs=[physical_design(c,{'poisson':32,'heat':48,'wave':64}[pde],observation=True,set_id=seed),physical_design(c,count,set_id=10000+seed),diagnostic_grid(c,grid_size)]
         sizes=[len(d[0]) for d in designs]; require(min(sizes)>0,'diagnostic grid contains no interior points')
         # All labels use the same actual continuous initial field and reference policy.
-        clean=evaluate_pairs(c,*[np.concatenate([d[k] for d in designs]) for k in range(3)])
+        joined=[np.concatenate([d[k] for d in designs]) for k in range(3)]
+        if cache_reference:
+            from .reference_cache import FixedReference
+            cached=FixedReference(c);clean=cached.evaluate(*joined)
+        else:clean=evaluate_pairs(c,*joined)
         chunks=np.split(clean,np.cumsum(sizes)[:-1]); ts=[]
         for j,(d,y) in enumerate(zip(designs,chunks)):
             ts.append(tokens(c,len(y),norms,observation=j==0,set_id=seed if j==0 else 10000+seed+j-1,coordinates=d,clean=y)[0])
@@ -80,6 +87,7 @@ def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,gri
         p={**{k:vars(t) for k,t in zip(('observation','training','diagnostic'),ts)},'clean_observations':torch.tensor(chunks[0],dtype=torch.float32)[None,:,None],'identities':ids}
         write_artifact(root,key,{'artifact_type':'diagnostic_bundle','architecture_id':'REFERENCE_ONLY','run_id':'fixed-TRAIN-diagnostics','benchmark':BENCHMARK_ID,'data_description':description},p,required=tuple(p),idempotent=True)
     result=FixedData(c,*[Tokens(**p[k]) for k in ('observation','training','diagnostic')],p['clean_observations'],norms,p['identities'],str(path))
+    result.cached_reference=cached
     result.assert_frozen(); return result
 
 

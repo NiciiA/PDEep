@@ -53,8 +53,10 @@ def quantity_metrics(pred,query,pde,norms):
     return out
 
 
-def reconstruction(model,data,*,chunk=512):
-    previous=model.training; model.eval(); b=data.batch(next(model.parameters()).device); d=data.batch(b.observations.position.device,diagnostic=True)
+def reconstruction(model,data,*,chunk=512,prepared_batches=None):
+    previous=model.training; model.eval()
+    if prepared_batches is None:b=data.batch(next(model.parameters()).device);d=data.batch(b.observations.position.device,diagnostic=True)
+    else:b,d=prepared_batches
     try:
         with torch.no_grad():
             cs=model.prepare_context(b.specs,b.observations)
