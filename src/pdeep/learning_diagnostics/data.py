@@ -27,11 +27,11 @@ def select(t,indices):
     return Tokens(**{k:None if v is None else v[:,indices].clone() for k,v in vars(t).items()})
 
 
-def diagnostic_grid(c,size):
+def diagnostic_grid(c,size,evaluation_times=None):
     mesh=c.problem.mesh; lo,hi=mesh.vertices.min(0),mesh.vertices.max(0)
     x=np.stack(np.meshgrid(*[np.linspace(lo[k],hi[k],size) for k in range(2)],indexing='ij'),-1).reshape(-1,2)
     x=x[mesh.features(x)['inside']]; x=x[mesh.features(x)['distance']>1e-7]
-    times=(0.,) if c.pde=='poisson' else TIMES; quantities=(0,1) if c.pde=='wave' else (0,)
+    times=(0.,) if c.pde=='poisson' else TIMES if evaluation_times is None else tuple(evaluation_times); quantities=(0,1) if c.pde=='wave' else (0,)
     return np.tile(x,(len(times)*len(quantities),1)),np.tile(np.repeat(times,len(x)),len(quantities)),np.repeat(quantities,len(times)*len(x)),c.pde!='poisson'
 
 
@@ -55,7 +55,7 @@ class FixedData:
             require(token_id(t)==self.identities[k],f'{k} changed in frozen experiment')
 
 
-def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,grid_size=64,conditioning_h=.12,pde=None,family=None,paired=False,cache_reference=False):
+def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,grid_size=64,conditioning_h=.12,pde=None,family=None,paired=False,cache_reference=False,evaluation_times=None):
     require(experiment in EXPERIMENTS,'unknown diagnostic experiment')
     defaults={'poisson_rectangle':('poisson','rectangle'),'heat_single':('heat','square'),'wave_single':('wave','square')}
     dp,dg=defaults.get(experiment,('poisson','square')); pde=pde or dp; family=family or dg
@@ -66,13 +66,16 @@ def prepare_data(root,record,*,experiment='poisson_square',seed=42,count=128,gri
     c=Case(family,pde,'train',index,conditioning_h)
     description={'schema':'fixed-TRAIN-learning-data-v1','case':c.manifest,'seed':seed,'observation_set':seed,'training_queries':count,'independent_grid_size':grid_size,'times':TIMES,'normalizers':norms.identity,'certificate':record['certification_id'],'query_policy':'strict fixed main queries, independent continuous-time grid'}
     if cache_reference:description['reference_evaluation']='cached-certified-P4-C1-v1'
+    if evaluation_times is not None:
+        require(len(evaluation_times)>0 and len(set(evaluation_times))==len(evaluation_times) and all(0<=t<=1 for t in evaluation_times),'invalid diagnostic evaluation times')
+        description['times']=tuple(evaluation_times)
     cached=None
     key=digest(description); root=Path(root); path=root/(key+'.json')
     if path.exists():
         meta,p=read_payload(path,kind='diagnostic_bundle',required=('observation','training','diagnostic','clean_observations','identities'))
         require(meta['data_description']==__import__('json').loads(__import__('json').dumps(description)),'cached diagnostic data mismatch')
     else:
-        designs=[physical_design(c,{'poisson':32,'heat':48,'wave':64}[pde],observation=True,set_id=seed),physical_design(c,count,set_id=10000+seed),diagnostic_grid(c,grid_size)]
+        designs=[physical_design(c,{'poisson':32,'heat':48,'wave':64}[pde],observation=True,set_id=seed),physical_design(c,count,set_id=10000+seed),diagnostic_grid(c,grid_size,evaluation_times)]
         sizes=[len(d[0]) for d in designs]; require(min(sizes)>0,'diagnostic grid contains no interior points')
         # All labels use the same actual continuous initial field and reference policy.
         joined=[np.concatenate([d[k] for d in designs]) for k in range(3)]

@@ -864,3 +864,5 @@ See [the query/GPU/striping guide](docs/continuous_query_diagnostics.md) for ret
 P4 reference evaluation, matched update/query budgets, CUDA placement/memory/AMP
 checks, legacy fixed resume and read-only auditing of trained grid artifacts.
 No multi-run comparison was launched while implementing this workflow.
+
+For the default **8,192-query dense resampled sequential diagnostic suite** (Poisson rectangle → heat → wave), open `notebooks/02_train.ipynb`, run setup/certification and the suite review, set `SUITE_RUN_MODE="train"`, then run the suite execution cell. All three independent runs execute synchronously with one dashboard and verified local-first/Drive persistence. Saved Run All remains preview-safe. See [suite setup, resume and interpretation](docs/sequential_diagnostic_suite.md).

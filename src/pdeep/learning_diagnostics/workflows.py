@@ -35,7 +35,7 @@ class DiagnosticPlan:
         return digest((tuple(asdict(c) for c in self.configs),self.data.identity,self.certificate['certification_id'],self.action,self.checkpoints,self.root,self.persistence.identity,self.settings,self.initial_model_ids))
 
 
-def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='medium',updates=500,device='auto',seed=42,action='fresh',certificate,root='artifacts',persistence=None,checkpoints=None,run_name=None,advanced=None,query_mode=None,query_count=None,query_time_policy='stratified',query_sampler_seed=42,query_chunk=512,query_checkpointing=True,amp_mode='off',memory_target_gb=11.):
+def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='medium',updates=500,device='auto',seed=42,action='fresh',certificate,root='artifacts',persistence=None,checkpoints=None,run_name=None,advanced=None,query_mode=None,query_count=None,query_time_policy='stratified',query_sampler_seed=42,query_chunk=512,query_checkpointing=True,amp_mode='off',memory_target_gb=11.,query_revision='continuous-queries-v2',evaluation_times=None):
     require(model in {'A_GEO','C_GEO'} and experiment in EXPERIMENTS,'select a real geometry model and one supported diagnostic')
     require(action in {'fresh','resume'},'diagnostic action fresh/resume only')
     require(experiment!='c_physics_ablation' or model=='C_GEO','paired physics ablation requires C_GEO')
@@ -45,7 +45,7 @@ def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='med
     requested_count=query_count if query_count is not None else advanced.get('query_count',1024 if modern else 128)
     require(query_mode in {None,'fixed','resampled','dense_resampled'} and 2<=requested_count<=16384,'invalid query strategy/count')
     base_count=requested_count if query_mode in {None,'fixed'} else min(requested_count,1024)
-    data=prepare_data(Path(root)/'learning_diagnostics'/'fixed_data',certificate,experiment=experiment,seed=seed,count=base_count,grid_size=advanced.get('grid_size',64),conditioning_h=advanced.get('conditioning_h',.12),pde=advanced.get('pde'),family=advanced.get('family'),cache_reference=modern)
+    data=prepare_data(Path(root)/'learning_diagnostics'/'fixed_data',certificate,experiment=experiment,seed=seed,count=base_count,grid_size=advanced.get('grid_size',64),conditioning_h=advanced.get('conditioning_h',.12),pde=advanced.get('pde'),family=advanced.get('family'),cache_reference=modern,evaluation_times=evaluation_times)
     objectives=('FULL','FIELD_ONLY') if experiment=='c_physics_ablation' else ('FULL',)
     configs=[];models=[];paths=[]
     run_name=run_name or 'diagnostic-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
@@ -62,7 +62,8 @@ def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='med
         else:
             opts={k:v for k,v in advanced.items() if k not in {'pde','family','grid_size'}}
             opts['query_count']=requested_count
-            if modern:opts.update(query_revision='continuous-queries-v2',query_mode=query_mode,query_time_policy=query_time_policy,query_sampler_seed=query_sampler_seed,query_chunk=query_chunk,query_checkpointing=query_checkpointing,amp_mode=amp_mode,memory_target_gb=memory_target_gb)
+            if modern:opts.update(query_revision=query_revision,query_mode=query_mode,query_time_policy=query_time_policy,query_sampler_seed=query_sampler_seed,query_chunk=query_chunk,query_checkpointing=query_checkpointing,amp_mode=amp_mode,memory_target_gb=memory_target_gb)
+            if capacity=='verification':opts['preset']='smoke'
             c=DiagnosticConfig(architecture=model,capacity=capacity,pdes=(data.case.pde,),probabilities=(1.,),training_families=(data.case.family,),cases_per_geometry=1,updates=updates,device=device,root_seed=seed,experiment=experiment,objective_variant=objective,data_identity=data.identity,bank_queries=max(128,opts.get('query_count',128)),run_tag=run_name+'-'+objective,**opts)
         # Preview builds real architecture without optimizer or hidden target inputs.
         m=create(model,data.normalizers,capacity,seed=seed,device=c.device)
@@ -98,7 +99,7 @@ def preflight(plan,*,loss_gradients=False,observations=False):
     return result
 
 
-def launch_diagnostic(plan,*,expected_identity,run_mode='preview',monitor=None):
+def launch_diagnostic(plan,*,expected_identity,run_mode='preview',monitor=None,save_initial_checkpoint=False):
     require(expected_identity==plan.identity,'diagnostic plan changed; rerun preview')
     require(run_mode in {'preview','train','resume'},'diagnostic mode preview/train/resume only')
     if run_mode=='preview':return {}
@@ -122,9 +123,15 @@ def launch_diagnostic(plan,*,expected_identity,run_mode='preview',monitor=None):
         else:engine=DiagnosticEngine(c,plan.root,data=plan.data,certificate=plan.certificate,model=m,persistence=plan.persistence,monitor=monitor)
         engine.performance_preflight=plan.performance.get(c.objective_variant,{})
         if hasattr(engine.sampler,'reference') and plan.reference_cache is not None:engine.sampler.reference=plan.reference_cache
+        if save_initial_checkpoint and plan.action=='fresh':engine.save_checkpoint()
         # Gradient conflicts measured once without changing the actual update.
         atomic_json(engine.run_dir/'gradient_terms.json',gradient_terms(engine.model,plan.data.batch(c.device),engine.adapter))
-        engine.run()  # shared synchronous update/run; no background worker or callback launch
+        if engine.state.successful<c.updates:
+            engine.run()  # shared synchronous update/run; no background worker or callback launch
+        else:
+            # Interrupted after the final checkpoint but before report/export.
+            # Reconstruct diagnostics, never repeat an already completed update.
+            engine.validate()
         atomic_json(engine.run_dir/'representation.json',representation(engine.model,plan.data))
         if c.architecture=='C_GEO':atomic_json(engine.run_dir/'physical_diagnostics.json',physical_diagnostics(engine.model,plan.data,engine.adapter.weak))
         engine.export();results[c.objective_variant]=engine

@@ -13,7 +13,7 @@ from .reference_cache import FixedReference
 
 MODES=('fixed','resampled','dense_resampled')
 
-def coordinates(case,count,seed,cursor,policy='stratified'):
+def coordinates(case,count,seed,cursor,policy='stratified',*,revision='continuous-queries-v2'):
     require(count>=2 and policy in {'stratified','mixture'},'invalid continuous query count/time policy')
     # Same existing area-weighted sqrt-barycentric geometry sampler as sensors.
     mesh=replace(case,conditioning_h=.08).problem.mesh
@@ -28,6 +28,18 @@ def coordinates(case,count,seed,cursor,policy='stratified'):
         t[:n0]=0;t[n0:n0+ne]=stream.uniform(np.nextafter(0.,1.),.1,ne);stream.shuffle(t)
     q=np.arange(count,dtype=np.int64)%2 if case.pde=='wave' else np.zeros(count,dtype=np.int64)
     random_stream('continuous-TRAIN-query-v2',case.case_id,seed,cursor,'quantity').shuffle(q)
+    if revision=='continuous-queries-v3' and policy=='stratified' and case.pde!='poisson':
+        # Versioned diagnostic risk; v2 streams above remain byte-identical.
+        # Guarantee coverage independently for EACH quantity, not just overall.
+        stream=random_stream('continuous-TRAIN-query-v3',case.case_id,seed,cursor,'time')
+        for quantity in np.unique(q):
+            ids=np.flatnonzero(q==quantity);n=len(ids)
+            require(n>=8,'v3 stratification requires >=8 queries per dynamic quantity')
+            n0=max(1,n//8);ne=max(1,n//8);nm=max(1,n//4);nl=max(1,n//4)
+            values=np.concatenate((np.zeros(n0),stream.uniform(np.nextafter(0.,1.),.1,ne),
+                stream.uniform(np.nextafter(.1,1.),.5,nm),stream.uniform(np.nextafter(.5,1.),1.,nl),
+                stream.random(n-n0-ne-nm-nl)))
+            stream.shuffle(values);t[ids]=values
     return x,t,q,case.pde!='poisson'
 
 
@@ -53,7 +65,7 @@ class QuerySampler:
         require(self._versions()==self.versions and current_device==self.device_versions and self.data.case.case_id==self.case_id,'frozen case/observation/evaluation tensors changed');c=self.config;start=time.perf_counter()
         if c.query_mode=='fixed':query=self.fixed_queries;prep=0.;cpu_id=self.data.identities['training']
         else:
-            ref=self._reference();design=coordinates(self.data.case,c.query_count,c.query_sampler_seed,cursor,c.query_time_policy)
+            ref=self._reference();design=coordinates(self.data.case,c.query_count,c.query_sampler_seed,cursor,c.query_time_policy,revision=c.query_revision)
             # Excluding a finite coordinate set has zero continuous area/time
             # measure. Explicitly reject even rare float32 tuple coincidences.
             x,t,q,present=design

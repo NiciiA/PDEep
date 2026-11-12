@@ -25,7 +25,8 @@ QUERY_FIELDS=('query_revision','query_mode','query_time_policy','query_sampler_s
 LEGACY_DIAGNOSTIC_SOURCE='484f281114c3528d89c218d6cb6e9e61ea7f429b8315eaca9658587661678192'
 
 def approved_diagnostic(config):
-    return config.diagnostic_source_id==diagnostic_source() or (config.diagnostic_source_id==LEGACY_DIAGNOSTIC_SOURCE and config.query_revision=='legacy-fixed-v1' and config.query_mode=='fixed' and config.amp_mode=='off')
+    from .suite_compatibility import approved_diagnostic_predecessor
+    return config.diagnostic_source_id==diagnostic_source() or (config.diagnostic_source_id==LEGACY_DIAGNOSTIC_SOURCE and config.query_revision=='legacy-fixed-v1' and config.query_mode=='fixed' and config.amp_mode=='off') or approved_diagnostic_predecessor(config)
 
 
 def diagnostic_source():
@@ -66,10 +67,11 @@ class DiagnosticConfig(Config):
         require(self.objective_variant!='FIELD_ONLY' or self.architecture=='C_GEO','field-only ablation is C_GEO')
         require(self.instrumentation_every>0,'positive instrumentation cadence required')
         require(len(self.pdes)==len(self.training_families)==1 and self.effective_batch==1,'fixed single TRAIN case required')
-        require(self.query_revision in {'legacy-fixed-v1','continuous-queries-v2'},'unknown query execution revision')
+        require(self.query_revision in {'legacy-fixed-v1','continuous-queries-v2','continuous-queries-v3'},'unknown query execution revision')
         require(self.query_mode in {'fixed','resampled','dense_resampled'} and self.query_time_policy in {'stratified','mixture'},'unknown training query policy')
         require(self.query_revision!='legacy-fixed-v1' or self.query_mode=='fixed','legacy checkpoints cannot silently change sampling')
         require(2<=self.query_count<=16384 and self.query_chunk>0 and 0<self.memory_target_gb<=12,'invalid bounded query/memory budget')
+        require(not (self.query_revision=='continuous-queries-v3' and self.query_mode!='fixed' and self.query_time_policy=='stratified' and self.pdes[0]!='poisson') or self.query_count>=(16 if self.pdes[0]=='wave' else 8),'v3 dynamic stratification needs >=8 records per quantity')
         require(self.amp_mode in {'off','auto','bf16'} and self.resolved_amp_mode in {'off','bf16'},'unsupported neural AMP policy')
         if not self.diagnostic_source_id:object.__setattr__(self,'diagnostic_source_id',diagnostic_source())
 
@@ -173,7 +175,7 @@ class DiagnosticEngine(Engine):
         status=sync_verified(path,self.persistence_policy);self.state.persistence.update(local_status='verified',Drive_status=status['Drive_status'],last_sync=status)
         if status['Drive_status']=='failed':warnings.warn('DRIVE SYNC FAILED; valid local diagnostic checkpoint retained. Colab storage is temporary. '+status['error'],RuntimeWarning)
         # Preserve complete disk histories separately from the resumable tensor state.
-        history={name:(self.run_dir/name).read_text() for name in ('steps.jsonl','validation.jsonl','module_updates.jsonl','gradient_terms.json','fixed_data.json') if (self.run_dir/name).exists()}
+        history={name:(self.run_dir/name).read_text() for name in ('steps.jsonl','validation.jsonl','performance.jsonl','module_updates.jsonl','gradient_terms.json','fixed_data.json') if (self.run_dir/name).exists()}
         history_path=write_artifact(self.run_dir/'history',f'history-{self.state.successful:08d}',{**meta,'artifact_type':'diagnostic_bundle'},{'history':history},required=('history',),idempotent=True)
         hs=sync_verified(history_path,self.persistence_policy);self.state.persistence['history_sync']=hs
         if hs['Drive_status']=='failed':warnings.warn('DRIVE HISTORY SYNC FAILED; local complete histories retained: '+hs['error'],RuntimeWarning)
