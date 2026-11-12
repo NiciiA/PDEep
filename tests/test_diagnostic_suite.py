@@ -87,15 +87,17 @@ def _metrics(pde):
 def synthetic_runtime(monkeypatch,certificate):
     calls=[];prepared=[];init=[];failure={'name':None,'once':True};launch_updates=[]
     def prepare(**kw):
-        name=kw['experiment'];pde,family=module.CATALOG[name];seed=kw['seed'];case=Case(family,pde,'train',4*(seed%3000)+__import__('pdeep.smooth.definition',fromlist=['SEEN']).SEEN.index(family))
+        name=kw['experiment'];pde,family=module.CATALOG[name];pde=kw.get('advanced',{}).get('pde',pde);family=kw.get('advanced',{}).get('family',family);seed=kw['seed'];case=Case(family,pde,'train',4*(seed%3000)+__import__('pdeep.smooth.definition',fromlist=['SEEN']).SEEN.index(family))
         data=SimpleNamespace(case=case,identity='data-'+case.case_id,identities={'observation':'obs-'+case.case_id,'diagnostic':'eval-'+case.case_id},cached_reference=None)
         configs=[];models=[]
-        for variant in module._variants(name):
+        for variant in tuple(kw.get('variant_settings') or module._variants(name)):
+            control=dict((kw.get('variant_settings') or {}).get(variant,{}))
+            policy=control.pop('query_time_policy',kw['query_time_policy'])
             c=DiagnosticConfig(architecture=kw['model'],capacity='verification',preset='smoke',updates=kw['updates'],device='cpu',
                 pdes=(pde,),probabilities=(1.,),training_families=(family,),cases_per_geometry=1,query_count=kw['query_count'],bank_queries=kw['query_count'],
-                query_revision=kw['query_revision'],query_mode=kw['query_mode'],query_time_policy=kw['query_time_policy'],query_sampler_seed=kw['query_sampler_seed'],
+                query_revision=kw['query_revision'],query_mode=kw['query_mode'],query_time_policy=policy,query_sampler_seed=kw['query_sampler_seed'],
                 query_chunk=kw['query_chunk'],query_checkpointing=kw['query_checkpointing'],amp_mode=kw['amp_mode'],root_seed=seed,
-                data_identity=data.identity,experiment=name,objective_variant=variant,run_tag=kw['run_name']+'-'+variant)
+                data_identity=data.identity,experiment=name,objective_variant=variant,run_tag=kw['run_name']+'-'+variant,**control)
             with torch.random.fork_rng():
                 torch.manual_seed(seed);m=torch.nn.Linear(2,1)
             configs.append(c);models.append(m)
@@ -114,7 +116,7 @@ def synthetic_runtime(monkeypatch,certificate):
     def launch(plan,expected_identity,run_mode,monitor,**kwargs):
         assert expected_identity==plan.identity
         name=plan.data.case.pde;c=plan.configs[0];experiment=c.experiment;calls.append((experiment,run_mode))
-        assert len(prepared)>=len(DEFAULT_EXPERIMENTS) or experiment=='c_physics_ablation'
+        assert len(prepared)>=len(DEFAULT_EXPERIMENTS) or experiment=='c_physics_ablation' or c.objective_variant in {'BASELINE','CLIP_2','CLIP_5','EARLY_TIME','EARLY_TIME_BEST_CLIP'}
         start=0
         if run_mode=='resume':_,pp=read_payload(plan.checkpoints[0]);start=pp['training_state']['successful']
         state=TrainingState(c.architecture,c.run_id);state.phase='ready';state.successful=start
@@ -134,7 +136,7 @@ def synthetic_runtime(monkeypatch,certificate):
                 failure['once']=False;raise KeyboardInterrupt('synthetic Colab disconnect after verified checkpoint')
         return {c.objective_variant:SimpleNamespace(config=c,state=state,model=plan.models[0],data=plan.data)}
     monkeypatch.setattr(module,'launch_diagnostic',launch)
-    def report(e,directory):
+    def report(e,directory,**kwargs):
         Path(directory).mkdir(parents=True,exist_ok=True)
         return {'model':e.config.architecture,'updates':e.state.successful,'metrics':_metrics(e.data.case.pde),'case':e.data.case.manifest,
                 'assessment':{'status':'passed'},'stability':{'elapsed_seconds':1.,'peak_allocated_CUDA_bytes':None,'clipping_fraction':0.}}

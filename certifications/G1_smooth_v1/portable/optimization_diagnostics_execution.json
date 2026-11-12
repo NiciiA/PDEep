@@ -1,0 +1,93 @@
+{
+  "schema": "reviewed-optimization-diagnostics-execution-v1",
+  "new_diagnostic_source": "d2f2f3701954c77c2e4d99c1f0c278de5ab32f51431e85b4064bc1ba7e890a85",
+  "approved_predecessors": [
+    "9216ec611f8eba754b527427ad9f2bd20ba15c9dcf2a7e15c137af625934b9f1",
+    "f262d19fdc5a49122a51c38e9433294b09ef58f4c356b0f1f8549008280f45af"
+  ],
+  "unchanged_files": {
+    "src/pdeep/learning_diagnostics/metrics.py": "f7f9f9ee79e1f27c8d0a0372475d34ba2e23df58b5baef0efbe7a3c8fd04d856",
+    "src/pdeep/learning_diagnostics/striping.py": "598a1f39de134b4f7d06846ff5f51547a0499f9d36e8432df0fcadb29c7fddc4",
+    "src/pdeep/learning_diagnostics/plotting.py": "de7ad9bc892c49caaa421104fe3c39de1f88bda012bc6fbfea5555568f4db007",
+    "src/pdeep/learning_diagnostics/__init__.py": "dead3c4d34c2fddee1e23577ad7c414e3813902e7b5c5f175501efab6009d9a5",
+    "src/pdeep/learning_diagnostics/execution_compatibility.py": "302dce6c19b0dd8d3ae9f16023a308633e8e67dc3fc37164d4454864bc0b1ec1",
+    "src/pdeep/learning_diagnostics/certificates.py": "7396d638ce494480b9de4acc511919ab220c7a1a6e4953326ec4ef97eba03420",
+    "src/pdeep/learning_diagnostics/sensitivity.py": "968e5343c690c06dd32fbfbc61fd83cfbcd682d6806cb6ce315c03a0f944fb91",
+    "src/pdeep/learning_diagnostics/runtime.py": "109b02789a489c89d61b46d08cf76f0a2587b349aa1f527abae97039d67d09c4",
+    "src/pdeep/learning_diagnostics/inspection.py": "b300e56fe5e2f0a29d4d1b3987d225332e552fadf8f51f32e73163d89aa33506",
+    "src/pdeep/learning_diagnostics/comparison.py": "10db8f1ccdc04dafe3f827b177f0b6ec3c353225256ceed002f1b191ed3aca60",
+    "src/pdeep/learning_diagnostics/dashboard.py": "92abf138911f2aeae7d02b06271badf5ccd86716bd3f20b3a80d4e68f01657e5",
+    "src/pdeep/learning_diagnostics/reference_cache.py": "45f7b58c8c3707e55b156a6429267d9adc57d3a4caab9431c4c499c51b5ef576",
+    "src/pdeep/learning_diagnostics/query_loss.py": "eae03a523ebeb74121eac03fdbf69e8513dc8212c618a5cc6b56f41afff47f2c",
+    "src/pdeep/learning_diagnostics/performance.py": "13eec6c2dc7d1c339490d9c6947ce3dceffa3211593281906b6c008dd4bc0695",
+    "src/pdeep/learning_diagnostics/data.py": "f2fedc609d58711ed9392c41458c93c9712fce9dda6d3fc86268848d4c70f410",
+    "docs/scientific_contract_v1.md": "2b70534332f00ea7e271591727a01292d51de19c84cfe35a07acea5262de877b",
+    "src/pdeep/core.py": "9546d56971787435fda27d358cf3815a57f54f9d197ab6bb969008c4d8b62e3a",
+    "src/pdeep/spec.py": "0ec06ad70415f7141e56a0bd7d1e4814ce3e12a2b01f3c23ac77d487fa78e200",
+    "src/pdeep/graph.py": "bc8527a3454b1fa17ab3c4e95df0ef9cd93c63d172a3327a28ecbd695e05e103",
+    "src/pdeep/benchmarks.py": "bb3f41fdf688b56ae48f9df67a4c3e60324d0542e141d669d08d96a09e490e65",
+    "src/pdeep/batches.py": "75b391462090c5706ede1a7fc18d9a6123a5fb653f61bbf3a56403b3cf0b545a",
+    "src/pdeep/reference.py": "2ad9695ec3cacd41c37406a0bd9eb0f3be7577e8ed00ab2f929b4da14238b284",
+    "src/pdeep/data.py": "d3405df7bdc32231a1c54a63cba3b5625e28a671615ca0462e9ade26d5462d7a",
+    "src/pdeep/diagnostics.py": "151a823aa0bae0a7e1946c7029a54a009e4c138ae8acebed4542544bdd84a93e",
+    "src/pdeep/encoding.py": "cc135e54eada0e337b08263a457f25024d8346e3233acaae10c68836cee58f0d",
+    "src/pdeep/geometry.py": "bcc1748c4668d04d6466b716b5e107d331bce7a09156d1843112616edd805672",
+    "src/pdeep/memory.py": "f9293e4e78a737d48a8b68a90d68f770f8336da71f87bae10c6f701c45fb2ab8",
+    "src/pdeep/representations.py": "a939157e00f701d82278c45d58290b591ccae93745992af88b57c512c70832f9",
+    "src/pdeep/architecture_a.py": "fed0859f5f61f1407c8dd4bbc1dc1cbea45cf9da64bdeac6380201642ec7be59",
+    "src/pdeep/architecture_c.py": "136a580207b0c99585ef0816d757f20752548c2df31e5c5132599533d8a362b5",
+    "src/pdeep/architecture_b.py": "d50103eea080fc29ad2bd26ecf654cff3c91803db636af573f609ffc7334f943",
+    "src/pdeep/constraints.py": "37496581d4a53ed8e47942f8dd6c93d0af7ab1c608821bdffdfd1b9e129e534e",
+    "src/pdeep/b_physics.py": "03621ba3d9ca7125d3c1234e9cd555b863df5eeb5d97f8be98a4b0fbdf668a76",
+    "src/pdeep/bayes.py": "47b1e2525cb49b0d5622aebb3330f8c5dbcd151ae726f5c72f9fb094c645044f",
+    "src/pdeep/a_training.py": "1c72c338796a863388c85f387b1dc91b6f92a4847a8f8dcf5a154d653c2d2015",
+    "src/pdeep/c_training.py": "feb95ce898f9ea1e5282f410c5b50e567c838b5fb87ad2c41752865b2704742e",
+    "src/pdeep/b_training.py": "5cee4cdb100061484f095fb1158b3caaa41a4e1e016659e4ff4c6b295dfa501c",
+    "src/pdeep/train_registry.py": "f59de2d231c01826f91e0f137c09426adb86101d3252d6fbe201a717515a5d7c",
+    "src/pdeep/train_data.py": "6e8aaf352d582edc4090d1f0f86263e0f47230eea4ab6d3002f15a3c43b2d021",
+    "src/pdeep/train_types.py": "8968c8b7b48e9b0878af380c732b70201ebee545eac7f460d23fde9a60c78196",
+    "src/pdeep/training.py": "59a0a9d372d924a739566df23a8e1a7159abb2ecf5b3bb8b40d9462706d2424b",
+    "src/pdeep/evaluation_plan.py": "14a37f2d28b3c299c03c79d7e22f5954ddee463bd45de3cb4b0bfc7e310dc9db",
+    "src/pdeep/evaluation_metrics.py": "dfa193a364246670345ffdda31b27f10c1f2287e3007257ae3fd1dfa3d13effb",
+    "src/pdeep/geometric/models.py": "d62416080ef8dfb3cfd09083b044c60ec9581e2da2972be4a5a56ca7a7146af5",
+    "src/pdeep/geometric/domain.py": "43e06faf47b6eb8afbbeceed88dfe7ae06d92cad70536a285459e768936b78b1",
+    "src/pdeep/geometric/quadrature.py": "d3fc800f47281abe3a9b7e619c5fa747ffe41733290127151abc9b9874ba46c5",
+    "src/pdeep/geometric/checks.py": "3b4ae05003d4b31ad5be9803d60e6b2a07cf7ffda91d1be2de118193959f3970",
+    "src/pdeep/geometric/__init__.py": "21b36ce6373d1b6188ab2d25556c8d53bf31dac2b8bc6ba4d593aaf8b868d468",
+    "src/pdeep/geometric/physics.py": "d5e1e961a455b01b90d292d91058c30b28ce4f730f7795651782ca67daed96eb",
+    "src/pdeep/geometric/portable.py": "2ef127d48ba92bcaacc471ce31fd53f48586509b46e11c8701dcb2bdc8eaa859",
+    "src/pdeep/geometric/workflows.py": "af488e11f36e49b4be1999800d344d27404080e56f58f666a8f05696760b126e",
+    "src/pdeep/geometric/representation.py": "e33f9ed66341e129c643ccbb4719532ed1550baafa8a0d309f993472b4f6ef2b",
+    "src/pdeep/geometric/fem.py": "2bdada397414d571eefb1e94b77627fceaf9d6953330a3292d13bf486f327338",
+    "src/pdeep/geometric/training.py": "1f526f61f5dd192c3d9222b4f1c288648e5ab265cd92ae9198592b7c970a6954",
+    "src/pdeep/geometric/data.py": "5719caa8cc75e6ca907252364df51b15f59363c461f142de16b928607ddfebe2"
+  },
+  "reviewed_changes": {
+    "src/pdeep/learning_diagnostics/suite_compatibility.py": {
+      "before": "9735cdeaa698fdc36cf333bb63d450a8fcb906182f8059b60170f6b8a30e54db",
+      "after": "ffaaaff4f3ffbaad46802399b636668ccc18f9ca4502fbc994e4953d5aafeb2d"
+    },
+    "src/pdeep/learning_diagnostics/suite.py": {
+      "before": "27b05544b0111e88b6d5e1b945a1f7e68910e7e79e3b5e2238fa21c3d6c6469e",
+      "after": "a42f12fbb0ac3162d09918314891eef145943117955bb88f6c0bf69966849b27"
+    },
+    "src/pdeep/learning_diagnostics/suite_reports.py": {
+      "before": "57643c36ef22ce9bec02bbc71278b04c525bfb081d93dbb530925daf0f8267d4",
+      "after": "b7c8fd2a2d4ae7f04d07f3e4bbe4464a4590073722254a2d86ac25f881a88b20"
+    },
+    "src/pdeep/learning_diagnostics/engine.py": {
+      "before": "f849acb760c713312bef1adf8e43407982d4480366d1c444db28c9241fdb7e6a",
+      "after": "8403bb70376723d30569177a33660ed8f50c6b8a20aad038e5383363da9bfe6b"
+    },
+    "src/pdeep/learning_diagnostics/queries.py": {
+      "before": "fadad4de4899d682fc71afde24e17e41525f7ed194717db849037fff4ef1ebd1",
+      "after": "e4c74aa51d7998d7b452fea0bdd132ff13813bb157831ca791324cc1de3cda14"
+    },
+    "src/pdeep/learning_diagnostics/workflows.py": {
+      "before": "0adbbe97c65c8a26b594b2b8185e2ef5582597483aadd9b54d9815e132a68db1",
+      "after": "b4cc305b1a8e1632ce6220f5ee95db6685d63351791381a6a0e9023b2b0c3105"
+    }
+  },
+  "reason": "Explicit opt-in loss controls/time-risk/clip studies and residual evaluation; unchanged default loss gradients, v2/v3 streams, architecture, reference, benchmark and shared optimizer. Default new config fields pruned for exact old config identity.",
+  "identity": "c49cc56aefd45db8efbbeb2d441389ba84638c8c33bb7565a00a7587b0388f07"
+}

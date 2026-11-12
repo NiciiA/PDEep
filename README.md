@@ -866,3 +866,5 @@ checks, legacy fixed resume and read-only auditing of trained grid artifacts.
 No multi-run comparison was launched while implementing this workflow.
 
 For the default **8,192-query dense resampled sequential diagnostic suite** (Poisson rectangle → heat → wave), open `notebooks/02_train.ipynb`, run setup/certification and the suite review, set `SUITE_RUN_MODE="train"`, then run the suite execution cell. All three independent runs execute synchronously with one dashboard and verified local-first/Drive persistence. Saved Run All remains preview-safe. See [suite setup, resume and interpretation](docs/sequential_diagnostic_suite.md).
+
+The four-cell **Phase G — Optimization and physics diagnostics** section adds matched C-wave physics weights, A-heat clipping/early-time comparisons, and evaluation-only wave consistency. Defaults are preview-safe16k queries/chunk4096, with memory-gated32k/64k support. See [focused diagnostic instructions](docs/optimization_diagnostics.md).

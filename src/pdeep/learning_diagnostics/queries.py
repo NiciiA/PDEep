@@ -14,7 +14,7 @@ from .reference_cache import FixedReference
 MODES=('fixed','resampled','dense_resampled')
 
 def coordinates(case,count,seed,cursor,policy='stratified',*,revision='continuous-queries-v2'):
-    require(count>=2 and policy in {'stratified','mixture'},'invalid continuous query count/time policy')
+    require(count>=2 and policy in {'stratified','mixture','early_stratified_v1'},'invalid continuous query count/time policy')
     # Same existing area-weighted sqrt-barycentric geometry sampler as sensors.
     mesh=replace(case,conditioning_h=.08).problem.mesh
     x=mesh.sample(count,random_stream('continuous-TRAIN-query-v2',case.case_id,seed,cursor,'position'))
@@ -40,6 +40,12 @@ def coordinates(case,count,seed,cursor,policy='stratified',*,revision='continuou
                 stream.uniform(np.nextafter(.1,1.),.5,nm),stream.uniform(np.nextafter(.5,1.),1.,nl),
                 stream.random(n-n0-ne-nm-nl)))
             stream.shuffle(values);t[ids]=values
+    if policy=='early_stratified_v1':
+        require(case.pde=='heat' and revision=='continuous-queries-v3','early-time ablation is a heat v3 diagnostic only')
+        stream=random_stream('early-heat-query-v1',case.case_id,seed,cursor,'time')
+        n0=count//4;na=count//5;nb=3*count//20;nm=count//5
+        t=np.concatenate((np.zeros(n0),stream.uniform(np.nextafter(0.,1.),.05,na),stream.uniform(np.nextafter(.05,1.),.1,nb),stream.uniform(np.nextafter(.1,1.),.5,nm),stream.uniform(np.nextafter(.5,1.),1.,count-n0-na-nb-nm)))
+        stream.shuffle(t)
     return x,t,q,case.pde!='poisson'
 
 

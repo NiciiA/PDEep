@@ -54,23 +54,33 @@ class DiagnosticConfig(Config):
     resolved_amp_mode: str='off'
     memory_target_gb: float=11.
     synchronize_timings: bool=False
+    physics_weights: tuple | None=None  # weak, initial, boundary; explicit study controls
+    physics_schedule: str='constant'
+    gradient_diagnostics_every: int=0
     @property
     def identity(self):
         values=asdict(self)
+        for key,default in [('physics_weights',None),('physics_schedule','constant'),('gradient_diagnostics_every',0)]:
+            if values[key]==default:values.pop(key)
         if self.query_revision=='legacy-fixed-v1':
             for k in QUERY_FIELDS:values.pop(k,None)
         return digest(values)
     def __post_init__(self):
         super().__post_init__()
         require(self.experiment in EXPERIMENTS,'unknown learning diagnostic')
-        require(self.objective_variant in {'FULL','FIELD_ONLY'},'unknown objective variant')
+        require(self.objective_variant in {'FULL','FIELD_ONLY','WEAK_001','ALL_001','ALL_01','FULL_01','STAGED_001','BASELINE','CLIP_2','CLIP_5','EARLY_TIME','EARLY_TIME_BEST_CLIP'},'unknown objective variant')
+        require(self.physics_weights is None or len(self.physics_weights)==3 and all(np.isfinite(w) and w>=0 for w in self.physics_weights),'nonnegative finite physics weights required')
+        if self.physics_weights is not None:object.__setattr__(self,'physics_weights',tuple(self.physics_weights))
+        require(self.physics_schedule in {'constant','staged_300_700'} and self.gradient_diagnostics_every>=0,'unknown physics schedule/gradient cadence')
+        require(self.physics_weights is None or self.architecture=='C_GEO','physics weight studies require C_GEO')
+        require(self.physics_schedule=='constant' or self.physics_weights is not None,'staged weights must be explicit')
         require(self.objective_variant!='FIELD_ONLY' or self.architecture=='C_GEO','field-only ablation is C_GEO')
         require(self.instrumentation_every>0,'positive instrumentation cadence required')
         require(len(self.pdes)==len(self.training_families)==1 and self.effective_batch==1,'fixed single TRAIN case required')
         require(self.query_revision in {'legacy-fixed-v1','continuous-queries-v2','continuous-queries-v3'},'unknown query execution revision')
-        require(self.query_mode in {'fixed','resampled','dense_resampled'} and self.query_time_policy in {'stratified','mixture'},'unknown training query policy')
+        require(self.query_mode in {'fixed','resampled','dense_resampled'} and self.query_time_policy in {'stratified','mixture','early_stratified_v1'},'unknown training query policy')
         require(self.query_revision!='legacy-fixed-v1' or self.query_mode=='fixed','legacy checkpoints cannot silently change sampling')
-        require(2<=self.query_count<=16384 and self.query_chunk>0 and 0<self.memory_target_gb<=12,'invalid bounded query/memory budget')
+        require(2<=self.query_count<=65536 and 0<self.query_chunk<=65536 and 0<self.memory_target_gb<=12,'invalid bounded query/memory budget')
         require(not (self.query_revision=='continuous-queries-v3' and self.query_mode!='fixed' and self.query_time_policy=='stratified' and self.pdes[0]!='poisson') or self.query_count>=(16 if self.pdes[0]=='wave' else 8),'v3 dynamic stratification needs >=8 records per quantity')
         require(self.amp_mode in {'off','auto','bf16'} and self.resolved_amp_mode in {'off','bf16'},'unsupported neural AMP policy')
         if not self.diagnostic_source_id:object.__setattr__(self,'diagnostic_source_id',diagnostic_source())
@@ -95,12 +105,21 @@ class DiagnosticEngine(Engine):
             from .query_loss import QueryAdapter
             self.sampler=QuerySampler(data,config)
             self.adapter=QueryAdapter(config.architecture,self.adapter.weak,chunk=config.query_chunk,checkpointing=config.query_checkpointing,field_only=config.objective_variant=='FIELD_ONLY',amp=config.resolved_amp_mode)
+        self._configure_physics(0)
         self.latest_performance={};self.performance_preflight={};self._device_events={};self._device_phase=None
         if config.objective_variant=='FIELD_ONLY' and config.query_revision=='legacy-fixed-v1':self.adapter=FieldOnly(config.architecture,self.adapter.weak)
         self.manifest=Manifest(((data.case.pde,data.case.family,'train',data.case.index),),self.normalizers.identity,self.certificate['certification_id'],'fixed TRAIN memorization; independent queries, NOT generalization' if config.query_revision=='legacy-fixed-v1' else 'fixed TRAIN physical case; '+config.query_mode+' queries; independent coordinates, NOT physical-case generalization')
         self.state.rng_sampler_state=self.sampler.state_dict(self.state.sampler_cursor)
         atomic_json(self.run_dir/'fixed_data.json',{'identity':data.identity,'identities':data.identities,'bank':data.path,'case':data.case.manifest})
         atomic_json(self.run_dir/'validation_manifest.json',asdict(self.manifest))
+
+    def _configure_physics(self,successful):
+        if self.config.query_revision=='legacy-fixed-v1':return
+        from dataclasses import replace
+        from .study_controls import physics_weights
+        w=physics_weights(self.config,successful)
+        self.adapter.weak=replace(self.adapter.weak,weak_weight=w[0],initial_weight=w[1],boundary_weight=w[2])
+        self.adapter.field_only=self.config.architecture!='C_GEO' or not any(w)
 
     def _notify(self,step=None,validation=None):
         if hasattr(self,'_device_events') and self.config.query_revision!='legacy-fixed-v1' and self.config.device.startswith('cuda'):
@@ -112,6 +131,9 @@ class DiagnosticEngine(Engine):
         return super()._notify(step,validation)
 
     def update(self,batch=None):
+        self._configure_physics(self.state.successful)
+        if self.config.gradient_diagnostics_every and self.state.successful%self.config.gradient_diagnostics_every==0:
+            self._log('gradient_terms.jsonl',{'successful_update':self.state.successful,'physics_weights':__import__('pdeep.learning_diagnostics.study_controls',fromlist=['physics_weights']).physics_weights(self.config,self.state.successful),'report':gradient_terms(self.model,self.data.batch(self.config.device),self.adapter)})
         if self.config.query_revision!='legacy-fixed-v1' and self.config.device.startswith('cuda'):
             require(self.performance_preflight.get('config_identity')==self.config.identity,'CUDA training requires the matching bounded memory/AMP preflight before updates')
             torch.cuda.reset_peak_memory_stats(self.config.device)
@@ -130,7 +152,7 @@ class DiagnosticEngine(Engine):
             spans={}
             for a,b in [('forward','backward'),('backward','optimizer'),('optimizer','ready')]:
                 if a in self._device_events and b in self._device_events and self._device_events[b].query():spans[a]=self._device_events[a].elapsed_time(self._device_events[b])/1000
-            self.latest_performance={'CUDA_event_phase_span_seconds':spans,'CUDA_event_scope':'stream elapsed spans include launch/CPU gaps; not kernel-active utilization','memory':memory(self.config.device),'utilization':utilization(self.config.device),'queries_per_update':report.counts['valid_queries'],'queries_per_second':report.counts['valid_queries']/seconds,'step_wall_seconds':seconds,'phase_timing_scope':'CPU wall/enqueue; CUDA phase timings only in isolated preflight','reference':self.sampler.last,'cache':self.adapter.last,'clipped_fraction':sum(r['gradient_before_clip']>self.config.grad_clip_norm for r in self.state.recent_steps)/max(1,len(self.state.recent_steps))}
+            self.latest_performance={'CUDA_event_phase_span_seconds':spans,'CUDA_event_scope':'stream elapsed spans include launch/CPU gaps; not kernel-active utilization','memory':memory(self.config.device),'utilization':utilization(self.config.device),'queries_per_update':report.counts['valid_queries'],'queries_per_second':report.counts['valid_queries']/seconds,'step_wall_seconds':seconds,'phase_timing_scope':'CPU wall/enqueue; CUDA phase timings only in isolated preflight','reference':self.sampler.last,'cache':self.adapter.last,'gradient_before_clip':report.gradient_before_clip,'gradient_after_clip':report.gradient_after_clip,'clipping_factor':report.gradient_after_clip/report.gradient_before_clip if report.gradient_before_clip else 1.,'physics_weights':__import__('pdeep.learning_diagnostics.study_controls',fromlist=['physics_weights']).physics_weights(self.config,max(0,self.state.successful-1)),'AMP_gradient_policy':'BF16 autocast or FP32; no GradScaler, gradients already in physical parameter scale before clipping','clipped_fraction':sum(r['gradient_before_clip']>self.config.grad_clip_norm for r in self.state.recent_steps)/max(1,len(self.state.recent_steps))}
             self._log('performance.jsonl',self.latest_performance);self.monitor.performance=self.latest_performance;self._notify(report)
         if capture:
             rows={}
@@ -175,7 +197,7 @@ class DiagnosticEngine(Engine):
         status=sync_verified(path,self.persistence_policy);self.state.persistence.update(local_status='verified',Drive_status=status['Drive_status'],last_sync=status)
         if status['Drive_status']=='failed':warnings.warn('DRIVE SYNC FAILED; valid local diagnostic checkpoint retained. Colab storage is temporary. '+status['error'],RuntimeWarning)
         # Preserve complete disk histories separately from the resumable tensor state.
-        history={name:(self.run_dir/name).read_text() for name in ('steps.jsonl','validation.jsonl','performance.jsonl','module_updates.jsonl','gradient_terms.json','fixed_data.json') if (self.run_dir/name).exists()}
+        history={name:(self.run_dir/name).read_text() for name in ('steps.jsonl','validation.jsonl','performance.jsonl','module_updates.jsonl','gradient_terms.json','gradient_terms.jsonl','fixed_data.json') if (self.run_dir/name).exists()}
         history_path=write_artifact(self.run_dir/'history',f'history-{self.state.successful:08d}',{**meta,'artifact_type':'diagnostic_bundle'},{'history':history},required=('history',),idempotent=True)
         hs=sync_verified(history_path,self.persistence_policy);self.state.persistence['history_sync']=hs
         if hs['Drive_status']=='failed':warnings.warn('DRIVE HISTORY SYNC FAILED; local complete histories retained: '+hs['error'],RuntimeWarning)
@@ -213,6 +235,7 @@ def resume_diagnostic(path,root,*,data,certificate,config,persistence=None,monit
     engine.state.last_checkpoint=str(path);engine.state.persistence['local_status']='verified'
     if not engine.state.checkpoint_history or engine.state.checkpoint_history[-1]['step']!=engine.state.successful:engine.state.checkpoint_history.append({'step':engine.state.successful,'path':str(path)})
     require(digest(p['sampler'])==digest(engine.sampler.state_dict(engine.state.sampler_cursor)),'fixed sampler resume mismatch')
+    engine._configure_physics(engine.state.successful)
     engine.best_validation_model_state=p.get('best_validation_model');engine.parent_checkpoints=[str(path)];engine._elapsed_base=engine.state.elapsed_seconds
     engine.rng_generators,limitations=restore_rng(p['rng'],target_device=config.device);require(not limitations,'exact RNG restore unavailable: '+str(limitations))
     return engine

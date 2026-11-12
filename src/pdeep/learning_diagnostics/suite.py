@@ -50,6 +50,7 @@ class SuiteSettings:
     stop_on_failure: bool=True
     memory_target_gb: float=11.
     advanced: dict=field(default_factory=dict)
+    variant_settings: dict=field(default_factory=dict)
 
 @dataclass
 class SuitePlan:
@@ -70,7 +71,7 @@ class SuitePlan:
         # Local/Drive locations are deliberately portable. Execution/device/source,
         # initialization, query recipe and numerical identity are not.
         return digest({'schema':SCHEMA,'experiments':self.experiments,'model':self.model,'capacity':self.capacity,
-                       'settings':asdict(self.settings),'certificate':self.certificate['certification_id'],
+                       'settings':{k:v for k,v in asdict(self.settings).items() if k!='variant_settings' or v},'certificate':self.certificate['certification_id'],
                        'recipes':self.recipes,'source':self.source})
     def preview(self):
         return {'suite_id':self.suite_id,'configuration_hash':self.identity,'action':self.action,
@@ -82,7 +83,9 @@ class SuitePlan:
                 'wave_loss':'0.5 L_u + 0.5 L_v, fixed TRAIN RMS; auxiliary .1; C FULL additionally .1 weak/.1 initial/.1 boundary'}
 
 
-def _variants(experiment):return ('FULL','FIELD_ONLY') if experiment=='c_physics_ablation' else ('FULL',)
+def _variants(experiment,settings=None):
+    if settings is not None and settings.variant_settings:return tuple(settings.variant_settings)
+    return ('FULL','FIELD_ONLY') if experiment=='c_physics_ablation' else ('FULL',)
 
 def _snapshot(path):
     meta,payload=read_payload(Path(path).expanduser(),kind='diagnostic_bundle',required=('suite_state','files'))
@@ -107,6 +110,7 @@ def prepare_diagnostic_suite(experiment_names=DEFAULT_EXPERIMENTS,*,model='A_GEO
     allowed={'grid_size','conditioning_h','validation_every','checkpoint_every','instrumentation_every','pde','family'}
     require(set(settings.advanced)<=allowed,'unknown/unsafe suite advanced settings')
     require('pde' not in settings.advanced and 'family' not in settings.advanced or names==('c_physics_ablation',),'PDE/family overrides are only for the explicit C ablation suite')
+    require(not settings.variant_settings or len(names)==1,'matched variant controls apply to one shared physical experiment')
     recipes=[]
     for i,name in enumerate(names):
         pde,family=CATALOG[name];pde=settings.advanced.get('pde',pde);family=settings.advanced.get('family',family)
@@ -114,17 +118,21 @@ def prepare_diagnostic_suite(experiment_names=DEFAULT_EXPERIMENTS,*,model='A_GEO
         # Stable experiment seeds govern independently initialized weights and
         # fixed physical/observation identities, all recorded separately below.
         seed=settings.seed+i
-        for variant in _variants(name):
+        for variant in _variants(name,settings):
+            from .study_controls import validate_variant
+            controls=settings.variant_settings.get(variant,{})
+            if controls:validate_variant(model,variant,controls)
+            options={'query_time_policy':settings.query_time_policy,**controls}
             DiagnosticConfig(architecture=model,capacity=capacity,preset='smoke' if capacity=='verification' else 'bounded',
                 updates=settings.updates,device=settings.device,pdes=(pde,),probabilities=(1.,),training_families=(family,),
                 cases_per_geometry=1,query_count=settings.query_count,bank_queries=max(128,settings.query_count),
-                query_revision='continuous-queries-v3',query_mode=settings.query_mode,query_time_policy=settings.query_time_policy,
+                query_revision='continuous-queries-v3',query_mode=settings.query_mode,**options,
                 query_sampler_seed=settings.query_sampler_seed,query_chunk=settings.query_chunk,query_checkpointing=settings.query_checkpointing,
                 amp_mode=settings.amp_mode,memory_target_gb=settings.memory_target_gb,learning_rate=settings.learning_rate,
                 scheduler=settings.scheduler,experiment=name,objective_variant=variant,
                 **{k:v for k,v in settings.advanced.items() if k not in {'grid_size','pde','family'}})
         case=Case(family,pde,'train',4*(seed%3000)+SEEN.index(family),settings.advanced.get('conditioning_h',.12))
-        recipes.append({'experiment':name,'pde':pde,'family':family,'seed':seed,'physical_case':case.case_id,'variants':_variants(name)})
+        recipes.append({'experiment':name,'pde':pde,'family':family,'seed':seed,'physical_case':case.case_id,'variants':_variants(name,settings)})
     saved=None;files={}
     if action=='resume':
         require(resume_manifest is not None,'select the verified suite snapshot manifest and keep its payload beside it')
@@ -135,13 +143,19 @@ def prepare_diagnostic_suite(experiment_names=DEFAULT_EXPERIMENTS,*,model='A_GEO
     require(Path(suite_id).name==suite_id and not suite_id.startswith('.'),'unsafe suite ID')
     plan=SuitePlan(names,model,capacity,settings,certificate,str(root),persistence or PersistencePolicy(),action,suite_id,tuple(recipes),diagnostic_source(),saved)
     if saved is not None:
-        require(saved['configuration_hash']==plan.identity,'suite identity/configuration/source/certificate mismatch; restore the saved settings and source')
+        if saved['configuration_hash']!=plan.identity:
+            from .suite_compatibility import approved_source
+            require(not settings.variant_settings and approved_source(saved.get('source')),'suite identity/configuration/source/certificate mismatch; restore the saved settings and source')
+            current=plan.source;plan.source=saved['source']
+            require(saved['configuration_hash']==plan.identity,'suite identity/configuration/source/certificate mismatch; restore the saved settings and source')
+            plan.source=current
+            plan._saved_identity=saved['configuration_hash']
         require(saved['order']==list(names),'suite experiment order mismatch')
         # Verify completed checkpoints too, without constructing an optimizer.
         for entry in saved['entries'].values():
             for variant,run in entry.get('runs',{}).items():
                 if run.get('checkpoint'):_verify_checkpoint(plan,run)
-            require(entry.get('status')!='completed' or all(entry['runs'].get(v,{}).get('status')=='completed' for v in _variants(entry['experiment'])),'incomplete member cannot be marked completed')
+            require(entry.get('status')!='completed' or all(entry['runs'].get(v,{}).get('status')=='completed' for v in _variants(entry['experiment'],settings)),'incomplete member cannot be marked completed')
         plan._restored_files=files
     return plan
 
@@ -184,16 +198,19 @@ class SuiteDashboard(Dashboard):
         s=self.suite_state;completed=[k for k,e in s['entries'].items() if e['status']=='completed'];active=s.get('active_experiment')
         upcoming=[k for k in s['order'] if k not in completed and k!=active]
         current=len(completed)+1 if active else len(completed)
+        arms=s['entries'].get(active,{}).get('runs',{})
+        active_variant=next((label for label,run in arms.items() if run.get('run_id')==v.get('run_id')),None)
         budget=s['preview']['settings']['updates'] if 'preview' in s else 0
-        total=budget*sum(len(_variants(name)) for name in s['order'])
+        total=budget*sum(len(e.get('runs',{})) or len(_variants(name)) for name,e in s['entries'].items())
         done=sum(run.get('observed_update',run.get('last_successful_update',0)) for e in s['entries'].values() for run in e.get('runs',{}).values())
         self.latest['suite']={'title':'G1_smooth_v1 — Diagnostic Suite','experiment':current,'total':len(s['order']),
             'current':active,'completed':completed,'upcoming':upcoming,'snapshot':s.get('snapshot'),
             'suite_Drive':s.get('suite_sync',{}),'configuration_hash':s['configuration_hash'],
             'overall_updates':done,'overall_requested':total,'overall_progress_percent':100*done/total if total else 0,
+            'current_variant':active_variant,'variants_completed':sum(run.get('status')=='completed' for run in arms.values()),'variants_total':len(arms),
             'current_experiment_ETA_seconds':v.get('ETA_seconds'),'whole_suite_ETA':'unavailable until remaining PDE costs are measured'}
         # Use exactly the same display handle; no stdout wrapping or nested display.
-        view=dict(v);view['experiment']=f"{current}/{len(s['order'])} · {active}"
+        view=dict(v);view['experiment']=f"{current}/{len(s['order'])} · {active} · {active_variant or 'preparing'}"
         view['performance']={**v.get('performance',{}),'suite':self.latest['suite']}
         super().render(view)
 
@@ -214,6 +231,13 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
     s=plan.snapshot or {'schema':SCHEMA,'suite_id':plan.suite_id,'configuration_hash':plan.identity,'certificate':plan.certificate['certification_id'],
         'order':list(plan.experiments),'entries':{n:{'experiment':n,'status':'pending','runs':{}} for n in plan.experiments},
         'active_experiment':None,'revision':0,'status':'preparing','preview':plan.preview(),'source':plan.source}
+    if plan.action=='fresh' and getattr(plan,'reused_runs',None):
+        name=plan.experiments[0]
+        for variant,run in plan.reused_runs.items():
+            _verify_checkpoint(plan,run)
+            s['entries'][name]['runs'][variant]=run
+        if all(s['entries'][name]['runs'].get(v,{}).get('status')=='completed' for v in _variants(name,plan.settings)):
+            s['entries'][name]['status']='completed'
     root.mkdir(parents=True,exist_ok=True)
     for relative,content in getattr(plan,'_restored_files',{}).items():
         dest=root/relative;require(dest.resolve().is_relative_to(root.resolve()),'unsafe suite report path')
@@ -225,7 +249,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
         # recursively inside successive immutable snapshots.
         state={k:v for k,v in s.items() if k not in {'snapshot','suite_sync'}}
         path=write_artifact(root/'snapshots',f'suite-state-{s["revision"]:08d}',
-            {'artifact_type':'diagnostic_bundle','architecture_id':plan.model,'run_id':plan.suite_id,'suite_schema':SCHEMA,'configuration_hash':plan.identity},
+            {'artifact_type':'diagnostic_bundle','architecture_id':plan.model,'run_id':plan.suite_id,'suite_schema':SCHEMA,'configuration_hash':s['configuration_hash']},
             {'suite_state':state,'files':files},required=('suite_state','files'))
         status=sync_verified(path,plan.persistence);s['snapshot']=str(path);s['suite_sync']=status
         atomic_json(root/'latest.json',{'manifest':str(path),'Drive_manifest':status['Drive_manifest'],'sync':status})
@@ -270,7 +294,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                 run_name=plan.suite_id+'-'+name,advanced=advanced,query_mode=plan.settings.query_mode,query_count=plan.settings.query_count,
                 query_time_policy=plan.settings.query_time_policy,query_sampler_seed=plan.settings.query_sampler_seed,
                 query_chunk=plan.settings.query_chunk,query_checkpointing=plan.settings.query_checkpointing,
-                amp_mode=plan.settings.amp_mode,memory_target_gb=plan.settings.memory_target_gb,query_revision='continuous-queries-v3',evaluation_times=(0.,.05,.1,.25,.5,.75,1.))
+                amp_mode=plan.settings.amp_mode,memory_target_gb=plan.settings.memory_target_gb,query_revision='continuous-queries-v3',evaluation_times=(0.,.05,.1,.25,.5,.75,1.),variant_settings=plan.settings.variant_settings or None)
             require(p.data.case.case_id==recipe['physical_case'],'suite physical recipe differs from prepared case')
             # Check all variants' exact requested settings. Existing completed
             # ablation arms are not retrained when the other arm was interrupted.
@@ -280,7 +304,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                 if old and old.get('checkpoint'):
                     path=_verify_checkpoint(plan,old);meta,_=read_payload(path,required=('model',))
                     saved=DiagnosticConfig(**{**meta['config'],**{k:tuple(meta['config'][k]) for k in ('pdes','probabilities','training_families')}})
-                    require(asdict(replace(saved,resolved_amp_mode=c.resolved_amp_mode))==asdict(c),'requested suite settings differ from saved member')
+                    require(asdict(replace(saved,resolved_amp_mode=c.resolved_amp_mode,diagnostic_source_id=c.diagnostic_source_id,run_tag=c.run_tag if old.get('reused_from') else saved.run_tag))==asdict(c),'requested suite settings differ from saved member')
                     from .inspection import load_model
                     fresh_models[i],_=load_model(path,plan.certificate,device=c.device);fresh_configs[i]=saved
             p.configs=tuple(fresh_configs);p.models=tuple(fresh_models);p.initial_model_ids=tuple(state_identity(m) for m in p.models)
@@ -333,7 +357,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                     last=engine.state.persistence.get('last_sync',{})
                     run.update(checkpoint=engine.state.last_checkpoint,checkpoint_id=meta['artifact_id'],last_successful_update=engine.state.successful,
                                Drive_checkpoint=last.get('Drive_manifest'),Drive_status=last.get('Drive_status','disabled'))
-                    run['report']=collect_run(engine,root/name/variant)
+                    run['report']=collect_run(engine,root/name/variant,figures=False) if plan.settings.variant_settings else collect_run(engine,root/name/variant)
                     run['status']='completed';persist()
                     engine.model.cpu();del engine,result,one;_release()
                 entry['status']='completed';s['active_experiment']=None;persist()
@@ -346,7 +370,11 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
             # Drop reference trajectories, prepared observations, optimizers and caches.
             del prepared[name],p;_release()
         s['status']='completed_with_failures' if any(e['status']=='failed' for e in s['entries'].values()) else 'completed'
-        s['summary']=combined_report(s,root);persist()
+        if plan.settings.variant_settings:
+            from .suite_reports import study_report
+            s['summary']=study_report(s,root)
+        else:s['summary']=combined_report(s,root)
+        persist()
         dashboard.render(dashboard.latest)
     except BaseException as error:
         name=s.get('active_experiment');s['status']='interrupted' if isinstance(error,KeyboardInterrupt) else 'failed'

@@ -35,7 +35,7 @@ class DiagnosticPlan:
         return digest((tuple(asdict(c) for c in self.configs),self.data.identity,self.certificate['certification_id'],self.action,self.checkpoints,self.root,self.persistence.identity,self.settings,self.initial_model_ids))
 
 
-def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='medium',updates=500,device='auto',seed=42,action='fresh',certificate,root='artifacts',persistence=None,checkpoints=None,run_name=None,advanced=None,query_mode=None,query_count=None,query_time_policy='stratified',query_sampler_seed=42,query_chunk=512,query_checkpointing=True,amp_mode='off',memory_target_gb=11.,query_revision='continuous-queries-v2',evaluation_times=None):
+def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='medium',updates=500,device='auto',seed=42,action='fresh',certificate,root='artifacts',persistence=None,checkpoints=None,run_name=None,advanced=None,query_mode=None,query_count=None,query_time_policy='stratified',query_sampler_seed=42,query_chunk=512,query_checkpointing=True,amp_mode='off',memory_target_gb=11.,query_revision='continuous-queries-v2',evaluation_times=None,variant_settings=None):
     require(model in {'A_GEO','C_GEO'} and experiment in EXPERIMENTS,'select a real geometry model and one supported diagnostic')
     require(action in {'fresh','resume'},'diagnostic action fresh/resume only')
     require(experiment!='c_physics_ablation' or model=='C_GEO','paired physics ablation requires C_GEO')
@@ -43,10 +43,10 @@ def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='med
     require(set(advanced)<=allowed,'unknown advanced diagnostic settings: '+str(set(advanced)-allowed))
     modern=query_mode is not None
     requested_count=query_count if query_count is not None else advanced.get('query_count',1024 if modern else 128)
-    require(query_mode in {None,'fixed','resampled','dense_resampled'} and 2<=requested_count<=16384,'invalid query strategy/count')
+    require(query_mode in {None,'fixed','resampled','dense_resampled'} and 2<=requested_count<=65536,'invalid query strategy/count')
     base_count=requested_count if query_mode in {None,'fixed'} else min(requested_count,1024)
     data=prepare_data(Path(root)/'learning_diagnostics'/'fixed_data',certificate,experiment=experiment,seed=seed,count=base_count,grid_size=advanced.get('grid_size',64),conditioning_h=advanced.get('conditioning_h',.12),pde=advanced.get('pde'),family=advanced.get('family'),cache_reference=modern,evaluation_times=evaluation_times)
-    objectives=('FULL','FIELD_ONLY') if experiment=='c_physics_ablation' else ('FULL',)
+    objectives=tuple(variant_settings) if variant_settings else ('FULL','FIELD_ONLY') if experiment=='c_physics_ablation' else ('FULL',)
     configs=[];models=[];paths=[]
     run_name=run_name or 'diagnostic-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     for objective in objectives:
@@ -63,6 +63,9 @@ def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='med
             opts={k:v for k,v in advanced.items() if k not in {'pde','family','grid_size'}}
             opts['query_count']=requested_count
             if modern:opts.update(query_revision=query_revision,query_mode=query_mode,query_time_policy=query_time_policy,query_sampler_seed=query_sampler_seed,query_chunk=query_chunk,query_checkpointing=query_checkpointing,amp_mode=amp_mode,memory_target_gb=memory_target_gb)
+            if variant_settings:
+                from .study_controls import validate_variant
+                validate_variant(model,objective,variant_settings[objective]);opts.update(variant_settings[objective])
             if capacity=='verification':opts['preset']='smoke'
             c=DiagnosticConfig(architecture=model,capacity=capacity,pdes=(data.case.pde,),probabilities=(1.,),training_families=(data.case.family,),cases_per_geometry=1,updates=updates,device=device,root_seed=seed,experiment=experiment,objective_variant=objective,data_identity=data.identity,bank_queries=max(128,opts.get('query_count',128)),run_tag=run_name+'-'+objective,**opts)
         # Preview builds real architecture without optimizer or hidden target inputs.
@@ -72,9 +75,9 @@ def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='med
             m,_=load_model(path,certificate,device=c.device)
             require((m.config.architecture,m.config.capacity)==(model,capacity),'sensitivity checkpoint architecture/capacity differs from selection')
         configs.append(c);models.append(m);paths.append(None if path is None else str(path))
-    if len(models)==2:
-        if action=='fresh':require(state_identity(models[0])==state_identity(models[1]),'ablation initializations differ')
-        require(all(a.data_ptr()!=b.data_ptr() for a,b in zip(models[0].parameters(),models[1].parameters())),'ablation instances must not share parameters')
+    if len(models)>1:
+        if action=='fresh':require(len({state_identity(m) for m in models})==1,'ablation initializations differ')
+        require(all(a.data_ptr()!=b.data_ptr() for i,m in enumerate(models) for other in models[i+1:] for a,b in zip(m.parameters(),other.parameters())),'ablation instances must not share parameters')
     checkpoints=({k:str(v) for k,v in checkpoints.items()} if isinstance(checkpoints,dict) else None if checkpoints is None else str(checkpoints))
     settings=dict(model=model,experiment=experiment,capacity=capacity,updates=updates,device=device,seed=seed,action=action,checkpoints=checkpoints,advanced=advanced,query_mode=query_mode,query_count=requested_count,query_time_policy=query_time_policy,query_sampler_seed=query_sampler_seed,query_chunk=query_chunk,query_checkpointing=query_checkpointing,amp_mode=amp_mode,memory_target_gb=memory_target_gb)
     return DiagnosticPlan(tuple(configs),data,tuple(models),certificate,action,tuple(paths),str(root),persistence or PersistencePolicy(),settings,tuple(state_identity(m) for m in models),reference_cache=data.cached_reference)
@@ -148,17 +151,25 @@ def performance_preflight(plan,*,counts=None,optimizer_step=False,cuda_kernel_pr
         if c.query_revision=='legacy-fixed-v1':configs.append(c);continue
         sampler=QuerySampler(plan.data,c,reference_cache=reference_cache);sampler.measure_transfer=True
         batch,preparation=sampler.batch(0);reference_cache=sampler.reference
-        adapter=QueryAdapter(c.architecture,WeakConfig(c.spatial_order,c.time_order,c.weak_tests,c.physics_chunk),chunk=c.query_chunk,checkpointing=c.query_checkpointing,field_only=c.objective_variant=='FIELD_ONLY')
-        precision=({'resolved':'off','reason':'paired C physics ablation uses common FP32 for both objectives'} if len(plan.configs)>1 and c.amp_mode=='auto' else resolve_amp(m,batch,adapter,c.amp_mode))
+        from .study_controls import configured_adapter
+        # Resolve precision against the eventual staged objective as well as
+        # profiling its peak work; zero-physics warmup must not bypass C's gate.
+        adapter=configured_adapter(c,successful=700 if c.physics_schedule!='constant' else 0)
+        precision=({'resolved':'off','reason':'matched diagnostic variants use common FP32'} if len(plan.configs)>1 and c.amp_mode=='auto' else resolve_amp(m,batch,adapter,c.amp_mode))
         if plan.action=='resume':require(precision['resolved']==c.resolved_amp_mode,'resume AMP numerical pilot differs from saved precision; no silent migration')
         c=replace(c,resolved_amp_mode=precision['resolved']);adapter.amp=c.resolved_amp_mode
         rows=[]
         for n in counts or (c.query_count,):
-            require(2<=n<=16384,'preflight counts must be2..16384')
+            require(2<=n<=65536,'preflight counts must be2..65536')
             if n!=c.query_count:
                 cfg=replace(c,query_count=n,bank_queries=max(c.bank_queries,n),query_mode='resampled')
                 temp=QuerySampler(plan.data,cfg,reference_cache=reference_cache);temp.measure_transfer=True;bb,pp=temp.batch(0);reference_cache=temp.reference
             else:bb,pp=batch,preparation
+            if c.physics_schedule!='constant':
+                # Profile the full target physics work, never only its zero-weight warmup.
+                from .study_controls import configured_adapter
+                adapter=configured_adapter(c,successful=700)
+                adapter.amp=c.resolved_amp_mode
             row=profile(m,bb,adapter,memory_target_gb=c.memory_target_gb,optimizer_step=optimizer_step,cuda_kernel_profile=cuda_kernel_profile);row['data_preparation']=pp;rows.append(row)
             if n==c.query_count:require(row['status']=='fits','configured query budget exceeds measured memory allowance; lower QUERY_COUNT/QUERY_CHUNK_SIZE or enable checkpointing')
         outcomes[c.objective_variant]={'config_identity':c.identity,'precision':precision,'profiles':rows,'model_state_identity':state_identity(m)};configs.append(c)
