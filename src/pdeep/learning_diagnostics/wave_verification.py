@@ -108,6 +108,8 @@ def model_controls(model,data):
     x=xx.detach().cpu().double().numpy();t=tt.detach().cpu().double().numpy()[:,0]
     a=derivative_values(model,context,x,t,chunk=6);bb=derivative_values(model,context,x,t,chunk=1)
     for key in a:_row(rows,'C derivative chunk '+key,np.max(abs(a[key]-bb[key])),max(1,np.max(abs(a[key]))),rtol=3e-4,atol=2e-5)
+    if model.config.architecture=='A_GEO':
+        for row in rows:row['test']=row['test'].replace('C ','A ',1)
     return rows
 
 
@@ -154,11 +156,11 @@ def verify_wave(plan,*,data=None,model=None,reference_count=12):
     from ..geometric.models import create
     from ..smooth.training import select_device
     from .engine import diagnostic_source
-    started=time.perf_counter();require(plan.model=='C_GEO' and plan.recipes[0]['pde']=='wave','C wave verification only')
+    started=time.perf_counter();require(plan.model in {'A_GEO','C_GEO'} and plan.recipes[0]['pde']=='wave','A/C wave verification only')
     require(plan.source==diagnostic_source(),'stale wave plan; reload code and prepare again')
-    data=data or prepare_data(Path(plan.root)/'learning_diagnostics'/'fixed_data',plan.certificate,experiment='c_physics_ablation',seed=plan.settings.seed,pde='wave',family='square',
+    data=data or prepare_data(Path(plan.root)/'learning_diagnostics'/'fixed_data',plan.certificate,experiment=plan.experiments[0],seed=plan.settings.seed,pde='wave',family='square',
         count=min(plan.settings.query_count,1024),conditioning_h=plan.settings.advanced.get('conditioning_h',.12),grid_size=plan.settings.advanced.get('grid_size',64),cache_reference=True,evaluation_times=(0.,.05,.1,.25,.5,.75,1.))
-    model=model or create('C_GEO',data.normalizers,plan.capacity,seed=plan.settings.seed,device=select_device(plan.settings.device))
+    model=model or create(plan.model,data.normalizers,plan.capacity,seed=plan.settings.seed,device=select_device(plan.settings.device))
     before=state_identity(model);rows=analytic_controls()+model_controls(model,data);rr,floor=reference_controls(data,count=reference_count);rows+=rr
     gradients=None
     if 'KIN_001' in plan.settings.variant_settings:
@@ -173,7 +175,7 @@ def verify_wave(plan,*,data=None,model=None,reference_count=12):
             'passed':bool(gradients['raw_gradient_norms']['kinematic']>0 and np.isfinite(gradients['raw_gradient_norms']['kinematic']) and np.isclose(gradients['weighted_gradient_norms']['kinematic'],cfg.kinematic_weight*gradients['raw_gradient_norms']['kinematic'],rtol=2e-5))})
     require(before==state_identity(model),'derivative verification changed model weights')
     report={'passed':all(r['passed'] for r in rows),'gradient_scale_diagnostics':gradients,'rows':rows,'reference_floor':floor,'plan_identity':plan.identity,'source':diagnostic_source(),
-        'certificate':plan.certificate['certification_id'],'physical_case':data.case.case_id,'data_identity':data.identity,'observation_identity':data.identities['observation'],
+        'certificate':plan.certificate['certification_id'],'physical_case':data.case.case_id,'data_identity':data.identity,'observation_identity':data.identities['observation'],'evaluation_identity':data.identities['diagnostic'],
         'initialization_identity':before,'model_config':asdict(model.config),'model_state':'fresh deterministic initialization, NOT a trained-model result',
         'device':str(next(model.parameters()).device),'dtype':str(next(model.parameters()).dtype),'reference_dtype':'CPU float64','optimizer_updates':0,'qualification_executed':False,
         'elapsed_seconds':time.perf_counter()-started,'CUDA_device_name':torch.cuda.get_device_name(next(model.parameters()).device) if next(model.parameters()).device.type=='cuda' else None,'CUDA_memory_preflight_executed':False,

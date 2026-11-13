@@ -15,6 +15,7 @@ from .engine import DiagnosticConfig,DiagnosticEngine,resume_diagnostic,FieldOnl
 from .dashboard import Dashboard
 from .metrics import reconstruction,representation,gradient_terms,physical_diagnostics
 from .sensitivity import sensitivity
+from .wave_progress import observe
 
 @dataclass
 class DiagnosticPlan:
@@ -45,7 +46,7 @@ def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='med
     requested_count=query_count if query_count is not None else advanced.get('query_count',1024 if modern else 128)
     require(query_mode in {None,'fixed','resampled','dense_resampled'} and 2<=requested_count<=65536,'invalid query strategy/count')
     base_count=requested_count if query_mode in {None,'fixed'} else min(requested_count,1024)
-    data=prepare_data(Path(root)/'learning_diagnostics'/'fixed_data',certificate,experiment=experiment,seed=seed,count=base_count,grid_size=advanced.get('grid_size',64),conditioning_h=advanced.get('conditioning_h',.12),pde=advanced.get('pde'),family=advanced.get('family'),cache_reference=modern,evaluation_times=evaluation_times)
+    data=observe('REFERENCE PREPARATION: fixed case, sensors and CPU64 query labels',lambda:prepare_data(Path(root)/'learning_diagnostics'/'fixed_data',certificate,experiment=experiment,seed=seed,count=base_count,grid_size=advanced.get('grid_size',64),conditioning_h=advanced.get('conditioning_h',.12),pde=advanced.get('pde'),family=advanced.get('family'),cache_reference=modern,evaluation_times=evaluation_times),architecture=model)
     objectives=tuple(variant_settings) if variant_settings else ('FULL','FIELD_ONLY') if experiment=='c_physics_ablation' else ('FULL',)
     configs=[];models=[];paths=[]
     run_name=run_name or 'diagnostic-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
@@ -69,7 +70,7 @@ def prepare_diagnostic(*,model='A_GEO',experiment='poisson_square',capacity='med
             if capacity=='verification':opts['preset']='smoke'
             c=DiagnosticConfig(architecture=model,capacity=capacity,pdes=(data.case.pde,),probabilities=(1.,),training_families=(data.case.family,),cases_per_geometry=1,updates=updates,device=device,root_seed=seed,experiment=experiment,objective_variant=objective,data_identity=data.identity,bank_queries=max(128,opts.get('query_count',128)),run_tag=run_name+'-'+objective,**opts)
         # Preview builds real architecture without optimizer or hidden target inputs.
-        m=create(model,data.normalizers,capacity,seed=seed,device=c.device)
+        m=observe('MODEL CONSTRUCTION',lambda:create(model,data.normalizers,capacity,seed=seed,device=c.device),architecture=model,variant=objective)
         if path is not None and (experiment=='observation_sensitivity' or action=='resume'):
             from .inspection import load_model
             m,_=load_model(path,certificate,device=c.device)
@@ -122,13 +123,13 @@ def launch_diagnostic(plan,*,expected_identity,run_mode='preview',monitor=None,s
             paired=prepare_data(Path(plan.root)/'learning_diagnostics'/'fixed_data',plan.certificate,experiment=c.experiment,seed=c.root_seed,count=c.query_count,grid_size=4,conditioning_h=c.conditioning_h,pde=plan.data.case.pde,family=plan.data.case.family,paired=True)
             result=sensitivity(m,plan.data,paired);dest=Path(plan.root)/'learning_diagnostics'/'observation_sensitivity'/c.run_id
             atomic_json(dest/'sensitivity.json',result);results[c.objective_variant]={'result':result,'path':str(dest),'optimizer_updates':0};continue
-        if plan.action=='resume':engine=resume_diagnostic(path,plan.root,data=plan.data,certificate=plan.certificate,config=c,persistence=plan.persistence,monitor=monitor)
-        else:engine=DiagnosticEngine(c,plan.root,data=plan.data,certificate=plan.certificate,model=m,persistence=plan.persistence,monitor=monitor)
+        if plan.action=='resume':engine=observe('EXPLICIT CHECKPOINT STATE RESTORE',lambda:resume_diagnostic(path,plan.root,data=plan.data,certificate=plan.certificate,config=c,persistence=plan.persistence,monitor=monitor),architecture=c.architecture,variant=c.objective_variant,origin='explicitly resumed')
+        else:engine=observe('ENGINE / OPTIMIZER CONSTRUCTION',lambda:DiagnosticEngine(c,plan.root,data=plan.data,certificate=plan.certificate,model=m,persistence=plan.persistence,monitor=monitor),architecture=c.architecture,variant=c.objective_variant,origin='fresh')
         engine.performance_preflight=plan.performance.get(c.objective_variant,{})
         if hasattr(engine.sampler,'reference') and plan.reference_cache is not None:engine.sampler.reference=plan.reference_cache
         if save_initial_checkpoint and plan.action=='fresh':engine.save_checkpoint()
         # Gradient conflicts measured once without changing the actual update.
-        atomic_json(engine.run_dir/'gradient_terms.json',gradient_terms(engine.model,plan.data.batch(c.device),engine.adapter))
+        atomic_json(engine.run_dir/'gradient_terms.json',observe('INITIAL LOSS-GRADIENT DIAGNOSTICS',lambda:gradient_terms(engine.model,plan.data.batch(c.device),engine.adapter),architecture=c.architecture,variant=c.objective_variant))
         if engine.state.successful<c.updates:
             engine.run()  # shared synchronous update/run; no background worker or callback launch
         else:
@@ -137,7 +138,7 @@ def launch_diagnostic(plan,*,expected_identity,run_mode='preview',monitor=None,s
             engine.validate()
         atomic_json(engine.run_dir/'representation.json',representation(engine.model,plan.data))
         if c.architecture=='C_GEO':atomic_json(engine.run_dir/'physical_diagnostics.json',physical_diagnostics(engine.model,plan.data,engine.adapter.weak))
-        engine.export();results[c.objective_variant]=engine
+        observe('FINAL EVALUATION / INFERENCE EXPORT',engine.export,architecture=c.architecture,variant=c.objective_variant);results[c.objective_variant]=engine
     return results
 
 
@@ -150,12 +151,12 @@ def performance_preflight(plan,*,counts=None,optimizer_step=False,cuda_kernel_pr
     for c,m in zip(plan.configs,plan.models):
         if c.query_revision=='legacy-fixed-v1':configs.append(c);continue
         sampler=QuerySampler(plan.data,c,reference_cache=reference_cache);sampler.measure_transfer=True
-        batch,preparation=sampler.batch(0);reference_cache=sampler.reference
+        batch,preparation=observe('REFERENCE TRAJECTORY / LABEL EVALUATION / DEVICE TRANSFER',lambda:sampler.batch(0),architecture=c.architecture,variant=c.objective_variant);reference_cache=sampler.reference
         from .study_controls import configured_adapter
         # Resolve precision against the eventual staged objective as well as
         # profiling its peak work; zero-physics warmup must not bypass C's gate.
         adapter=configured_adapter(c,successful=700 if c.physics_schedule!='constant' else 0)
-        precision=({'resolved':'off','reason':'matched diagnostic variants use common FP32'} if len(plan.configs)>1 and c.amp_mode=='auto' else resolve_amp(m,batch,adapter,c.amp_mode))
+        precision=({'resolved':'off','reason':'matched diagnostic variants use common FP32'} if (len(plan.configs)>1 or getattr(plan,'force_fp32',False)) and c.amp_mode=='auto' else observe('AMP NUMERICAL PILOT',lambda:resolve_amp(m,batch,adapter,c.amp_mode),architecture=c.architecture,variant=c.objective_variant))
         if plan.action=='resume':require(precision['resolved']==c.resolved_amp_mode,'resume AMP numerical pilot differs from saved precision; no silent migration')
         c=replace(c,resolved_amp_mode=precision['resolved']);adapter.amp=c.resolved_amp_mode
         rows=[]
@@ -170,9 +171,9 @@ def performance_preflight(plan,*,counts=None,optimizer_step=False,cuda_kernel_pr
                 from .study_controls import configured_adapter
                 adapter=configured_adapter(c,successful=700)
                 adapter.amp=c.resolved_amp_mode
-            row=profile(m,bb,adapter,memory_target_gb=c.memory_target_gb,optimizer_step=optimizer_step,cuda_kernel_profile=cuda_kernel_profile);row['data_preparation']=pp;rows.append(row)
+            row=observe('MEMORY / FORWARD-BACKWARD PREFLIGHT',lambda:profile(m,bb,adapter,memory_target_gb=c.memory_target_gb,optimizer_step=optimizer_step,cuda_kernel_profile=cuda_kernel_profile),architecture=c.architecture,variant=c.objective_variant);row['data_preparation']=pp;rows.append(row)
             if n==c.query_count:require(row['status']=='fits','configured query budget exceeds measured memory allowance; lower QUERY_COUNT/QUERY_CHUNK_SIZE or enable checkpointing')
-        gradients=gradient_terms(m,plan.data.batch(c.device),adapter) if c.kinematic_weight else None
+        gradients=observe('KINEMATIC GRADIENT-SCALE DIAGNOSTICS',lambda:gradient_terms(m,plan.data.batch(c.device),adapter),architecture=c.architecture,variant=c.objective_variant) if c.kinematic_weight else None
         if gradients and gradients['kinematic_gradient_dominates_100x']:
             import warnings
             warnings.warn('KINEMATIC GRADIENT DOMINATES FIELD >=100x. Configuration flagged; declared weight retained. Inspect gradient report before a long run.',RuntimeWarning)

@@ -1,7 +1,9 @@
 {
   "schema": "reviewed-optional-wave-kinematic-execution-v1",
-  "new_diagnostic_source": "2fe9e8e84dacbfe8a25d7e6158eecd5442d94ae5200fad0be0e74e5c9547eff7",
+  "new_diagnostic_source": "ab921820779b6e4a81978f3f3bdd7e60307f9afca0610d728a7f5e47359a50b4",
   "approved_predecessors": [
+    "2fe9e8e84dacbfe8a25d7e6158eecd5442d94ae5200fad0be0e74e5c9547eff7",
+    "5189bc015c5780b8d39432be8a34cef962fba6047d5f9bffc88ea27fb3b7721f",
     "9216ec611f8eba754b527427ad9f2bd20ba15c9dcf2a7e15c137af625934b9f1",
     "d2f2f3701954c77c2e4d99c1f0c278de5ab32f51431e85b4064bc1ba7e890a85",
     "f262d19fdc5a49122a51c38e9433294b09ef58f4c356b0f1f8549008280f45af"
@@ -71,9 +73,23 @@
     "src/pdeep/learning_diagnostics/comparison.py": "10db8f1ccdc04dafe3f827b177f0b6ec3c353225256ceed002f1b191ed3aca60",
     "src/pdeep/learning_diagnostics/dashboard.py": "92abf138911f2aeae7d02b06271badf5ccd86716bd3f20b3a80d4e68f01657e5",
     "src/pdeep/learning_diagnostics/reference_cache.py": "45f7b58c8c3707e55b156a6429267d9adc57d3a4caab9431c4c499c51b5ef576",
-    "src/pdeep/learning_diagnostics/data.py": "f2fedc609d58711ed9392c41458c93c9712fce9dda6d3fc86268848d4c70f410"
+    "src/pdeep/learning_diagnostics/data.py": "f2fedc609d58711ed9392c41458c93c9712fce9dda6d3fc86268848d4c70f410",
+    "src/pdeep/learning_diagnostics/kinematic.py": "708f532e4e4367e4ac558afb129fe703a54a998e3efb5fe171ff46065394fb88",
+    "src/pdeep/learning_diagnostics/query_loss.py": "b797301161e1f226397cb0434c18c4cfbf0b96b2bf8d30fc91add5234345598e",
+    "src/pdeep/learning_diagnostics/queries.py": "e4c74aa51d7998d7b452fea0bdd132ff13813bb157831ca791324cc1de3cda14",
+    "src/pdeep/learning_diagnostics/consistency.py": "e30511151c96afdbd5b34fb284b6e211deca2d94ba5e28113d2888e63b4b471a"
   },
-  "reviewed_scope": "optional new loss is off in legacy configurations; existing field/aux/weak objectives, absolute300/700 schedule and v2/v3 queries unchanged. New penalty/sampler/schedule have explicit config identities. Models, physical references, shared optimizer and numerical certification unchanged.",
-  "verification": "tests/test_wave_kinematic.py; tests/test_optimization_diagnostics.py; tests/test_numpy_checkpoint_compat.py; reports/wave_kinematic/report.md",
-  "identity": "32125d0b43e1abe9f98be024aaa57bf60d93654472d52ea45cf0e614130ccb29"
+  "reviewed_scope": "Wave orchestration only: default fresh unique identities, explicit path-only resume, no discovery; optional ContextVar phase callbacks and UI-only heartbeat. Existing A/C losses, derivatives, sampling, shared optimizer, reference, priors, architecture and exact checkpoint state/config semantics unchanged.",
+  "verification": "tests/test_wave_live_workflow.py; tests/test_five_wave_experiments.py; tests/test_wave_kinematic.py; tests/test_numpy_checkpoint_compat.py; reports/wave_live_workflow/report.md",
+  "kinematic_predecessors": [
+    "2fe9e8e84dacbfe8a25d7e6158eecd5442d94ae5200fad0be0e74e5c9547eff7",
+    "5189bc015c5780b8d39432be8a34cef962fba6047d5f9bffc88ea27fb3b7721f"
+  ],
+  "kinematic_architectures": {
+    "5189bc015c5780b8d39432be8a34cef962fba6047d5f9bffc88ea27fb3b7721f": [
+      "A_GEO",
+      "C_GEO"
+    ]
+  },
+  "identity": "f182b72f327181cc8c54cc223061d912fbef62146aaf0ec079272d49bf0a5d9b"
 }

@@ -9,18 +9,23 @@ from .consistency import evaluate_wave_checkpoints,TIMES
 
 
 def compare_wave(plan,verification,*,result=None,device='auto',count=128,chunk=128,display=True):
-    from .wave_study import recover_wave_checkpoints
     root=Path(plan.root)/'learning_diagnostics'/'wave_kinematic'/plan.suite_id/'comparison'
-    recovery=recover_wave_checkpoints(plan,verification)
+    recovery={'status':'direct recorded paths only'}
     runs={}
     if plan.snapshot:
-        runs.update(plan.snapshot['entries']['c_physics_ablation'].get('runs',{}))
+        runs.update(plan.snapshot['entries'][plan.experiments[0]].get('runs',{}))
     runs.update(getattr(plan,'reused_runs',{}))
-    if result and result.get('entries'):runs.update(result['entries']['c_physics_ablation']['runs'])
+    result=result or getattr(plan,'last_result',None)
+    if result and result.get('entries'):runs.update(result['entries'][plan.experiments[0]]['runs'])
     from .suite import _checkpoint_path
     paths={label:_checkpoint_path(runs[label]) if label in runs else None for label in plan.settings.variant_settings}
+    return _evaluate_comparison(plan,verification,paths,runs,recovery,root,device=device,count=count,chunk=chunk,display=display)
+
+
+def _evaluate_comparison(plan,verification,paths,runs,recovery,root,*,device,count,chunk,display):
     report=evaluate_wave_checkpoints(paths,plan.certificate,root,device=device,count=count,chunk=chunk)
     require(report['comparison']=='paired','wave arms are not matched; do not rank them')
+    require(len({r.get('coordinates_identity') for r in report['models'].values()})<=1,'evaluation query identities differ')
     sv=normalizers(plan.certificate).scale('wave','v');rows=[]
     for label,r in report['models'].items():
         require(r['physical_case']==verification['physical_case'] and r['observation_identity']==verification['observation_identity'],'comparison differs from verified matched case/sensors')
@@ -28,14 +33,22 @@ def compare_wave(plan,verification,*,result=None,device='auto',count=128,chunk=1
         for group,metric in r['pointwise']['groups'].items():
             metric['kinematic']['sv_normalized_MSE']=(metric['kinematic']['physical_RMS']/sv)**2
         meta,p=read_payload(paths[label],kind='training_checkpoint',required=('training_state',))
-        state=p['training_state'];run=runs[label]
+        state=p['training_state'];run=runs[label];stats=run.get('report',{}).get('stability',{})
+        gradients=[row for row in state.get('recent_steps',[]) if row.get('gradient_before_clip') is not None]
+        clip=meta.get('config',{}).get('grad_clip_norm',1.)
+        clipped=sum(row['gradient_before_clip']>clip for row in gradients)/len(gradients) if gradients else None
         r['cost']={'cumulative_successful_updates':r['updates'],'session_optimizer_updates':run.get('session_optimizer_updates',0),
             'result_origin':run.get('result_origin','restored from completed checkpoint'),'training_elapsed_seconds':state.get('elapsed_seconds'),
-            'optimizer_seconds':state.get('optimizer_seconds'),'scope':'checkpoint cumulative training clock; evaluation/recovery executes zero optimizer updates'}
+            'optimizer_seconds':stats.get('optimizer_seconds',state.get('optimizer_seconds')),
+            'clipping_fraction':stats.get('clipping_fraction',clipped),'clipping_records':stats.get('clipping_records',len(gradients)),
+            'clipping_scope':stats.get('clipping_scope','checkpoint rolling window only; no complete-history claim'),
+            'step_median_seconds':stats.get('step_median_seconds'),'step_p95_seconds':stats.get('step_p95_seconds'),
+            'peak_allocated_CUDA_bytes':stats.get('peak_allocated_CUDA_bytes'),'scope':'checkpoint cumulative training clock; evaluation/recovery executes zero optimizer updates'}
         for quantity in ('u','v'):
             scale=normalizers(plan.certificate).scale('wave',quantity);pred=arrays[quantity];truth=arrays['truth_'+quantity]
             r.setdefault('independent_quantities',{})[quantity]={'standardized_MSE':float(np.mean(((pred-truth)/scale)**2)),
                 'physical_RMSE':float(np.sqrt(np.mean((pred-truth)**2))),'amplitude_ratio':float(np.sqrt(np.mean(pred**2)/np.mean(truth**2))),
+                'late_standardized_MSE':r['pointwise']['groups']['late'][quantity]['standardized_MSE'],
                 'initial_physical_RMSE':float(np.sqrt(np.mean((pred[arrays['time']==0]-truth[arrays['time']==0])**2)))}
             allrow=r['pointwise']['groups']['all'];qm=r['independent_quantities'][quantity]
             rows.append({'variant':label,'quantity':quantity,**qm,'sensor_MSE':r['reconstruction']['sensors'][quantity]['standardized_MSE'],
@@ -43,27 +56,28 @@ def compare_wave(plan,verification,*,result=None,device='auto',count=128,chunk=1
                 'dynamic_interior_physical_RMS':allrow['dynamic']['physical_RMS'],'weak_MSE':r['weak']['weak'],'reference_weak_floor':r['reference_weak']['weak'],
                 'boundary_MSE':r['weak']['boundary'],'initial_consistency_MSE':r['weak']['initial'],**r['cost']})
     ratios={}
-    if 'FIELD_ONLY' in report['models']:
-        baseline=report['models']['FIELD_ONLY']
-        def ratio(a,b):return float(a/b) if b>0 else None
-        for label,r in report['models'].items():
-            if label=='FIELD_ONLY':continue
-            allrow=r['pointwise']['groups']['all'];base=baseline['pointwise']['groups']['all']
-            ratios[label]={**{q+'_MSE_ratio':ratio(r['independent_quantities'][q]['standardized_MSE'],baseline['independent_quantities'][q]['standardized_MSE']) for q in ('u','v')},
-                **{q+'_late_MSE_ratio':ratio(r['pointwise']['groups']['late'][q]['standardized_MSE'],baseline['pointwise']['groups']['late'][q]['standardized_MSE']) for q in ('u','v')},
-                'kinematic_MSE_ratio':ratio(allrow['kinematic']['sv_normalized_MSE'],base['kinematic']['sv_normalized_MSE']),
-                'dynamic_interior_RMS_ratio':ratio(allrow['dynamic']['physical_RMS'],base['dynamic']['physical_RMS']),
-                'weak_MSE_ratio':ratio(r['weak']['weak'],baseline['weak']['weak'])}
-    complete=set(report['models'])==set(plan.settings.variant_settings)
-    decision=('Matched trained checkpoints evaluated; compare measured ratios to FIELD_ONLY (below1 is lower error). '
+    def ratio(a,b):return float(a/b) if b>0 else None
+    for label,r in report['models'].items():
+        architecture=label.split('/')[0] if '/' in label else None
+        baseline_label=architecture+('/BASELINE' if architecture=='A_GEO' else '/FIELD_ONLY') if architecture else 'FIELD_ONLY'
+        if label==baseline_label or baseline_label not in report['models']:continue
+        baseline=report['models'][baseline_label]
+        allrow=r['pointwise']['groups']['all'];base=baseline['pointwise']['groups']['all']
+        ratios[label]={'baseline':baseline_label,**{q+'_MSE_ratio':ratio(r['independent_quantities'][q]['standardized_MSE'],baseline['independent_quantities'][q]['standardized_MSE']) for q in ('u','v')},
+            **{q+'_late_MSE_ratio':ratio(r['pointwise']['groups']['late'][q]['standardized_MSE'],baseline['pointwise']['groups']['late'][q]['standardized_MSE']) for q in ('u','v')},
+            'kinematic_MSE_ratio':ratio(allrow['kinematic']['sv_normalized_MSE'],base['kinematic']['sv_normalized_MSE']),
+            'dynamic_interior_RMS_ratio':ratio(allrow['dynamic']['physical_RMS'],base['dynamic']['physical_RMS']),
+            'weak_MSE_ratio':ratio(r['weak']['weak'],baseline['weak']['weak'])}
+    complete=set(report['models'])==set(paths)
+    decision=('Matched trained checkpoints evaluated; compare measured ratios to each architecture baseline (below1 is lower error). '
               if complete else 'Pending missing/incompatible trained checkpoints; partial comparisons only. ')
-    report.update(rows=rows,recovery=recovery,ratios_to_FIELD_ONLY=ratios,optimizer_updates=0,optimizer_constructed=False,
+    report.update(rows=rows,recovery=recovery,ratios_to_baseline=ratios,ratios_to_FIELD_ONLY=ratios if 'FIELD_ONLY' in paths else {},optimizer_updates=0,optimizer_constructed=False,
         decision=decision+'Kinematic improvement alone does not establish full wave dynamics. Interpret reconstruction/late-time/weak/dynamic/cost jointly; no automatic weight tuning or winner threshold.')
     report['figures']=_plots(report,root) if report['models'] else []
     atomic_json(root/'comparison.json',report)
     # Use existing verified artifact copier; preserve local result on Drive failure.
     files={p.name:p.read_bytes().hex() for p in root.glob('*.png')}
-    bundle=write_artifact(root/'artifacts',None,{'artifact_type':'diagnostic_bundle','architecture_id':'C_GEO','run_id':plan.suite_id,'benchmark':'G1_smooth_v1'},
+    bundle=write_artifact(root/'artifacts',None,{'artifact_type':'diagnostic_bundle','architecture_id':getattr(plan,'model','WAVE_COMPARISON'),'run_id':plan.suite_id,'benchmark':'G1_smooth_v1'},
         {'report':report,'figures':files},required=('report','figures'),idempotent=True)
     report['sync']=sync_verified(bundle,plan.persistence)
     if report['sync']['Drive_status']=='failed':
@@ -81,7 +95,7 @@ def _plots(report,root):
     for quantity in ('u','v'):
         maximum=max(np.max(abs(a[quantity])) for a in data.values());maximum=max(maximum,np.max(abs(first['truth_'+quantity])))
         error=max(np.max(abs(a[quantity]-a['truth_'+quantity])) for a in data.values());error=max(error,1e-15)
-        cols=1+2*len(labels);fig,axes=plt.subplots(3,cols,figsize=(2.25*cols,6.8),squeeze=False,layout='constrained')
+        cols=1+2*len(labels);fig,axes=plt.subplots(3,cols,figsize=(min(20,2.25*cols),6.8),squeeze=False,layout='constrained')
         for row,t in enumerate((0.,.5,1.)):
             take=first['time']==t;x=first['position'][take];truth=first['truth_'+quantity][take]
             axes[row,0].tricontourf(x[:,0],x[:,1],truth,levels=np.linspace(-maximum,maximum,33),cmap='RdBu_r')
@@ -125,12 +139,34 @@ def normalizers_scale(report,r,key):
 
 def display_comparison(report):
     from IPython.display import display,Markdown,Image
-    columns=('variant','quantity','standardized_MSE','physical_RMSE','sensor_MSE','amplitude_ratio','initial_physical_RMSE','kinematic_sv_MSE','dynamic_interior_physical_RMS','weak_MSE','session_optimizer_updates','result_origin')
+    columns=('variant','quantity','standardized_MSE','physical_RMSE','sensor_MSE','late_standardized_MSE','amplitude_ratio','initial_physical_RMSE','kinematic_physical_RMS','kinematic_sv_MSE','dynamic_interior_physical_RMS','weak_MSE','clipping_fraction','training_elapsed_seconds','step_median_seconds','peak_allocated_CUDA_bytes','boundary_MSE','initial_consistency_MSE','session_optimizer_updates','result_origin')
     def fmt(v):return f'{v:.5g}' if isinstance(v,float) else str(v)
     display(Markdown('| '+' | '.join(columns)+' |\n|'+'|'.join(['---']*len(columns))+'|\n'+'\n'.join('| '+' | '.join(fmt(row.get(k)) for k in columns)+' |' for row in report['rows'])))
-    if report.get('ratios_to_FIELD_ONLY'):
-        ratio_columns=tuple(next(iter(report['ratios_to_FIELD_ONLY'].values())))
-        display(Markdown('|Variant / FIELD_ONLY|'+ '|'.join(ratio_columns)+'|\n|---|'+'|'.join(['---']*len(ratio_columns))+'|\n'+'\n'.join('|'+label+'|'+'|'.join(fmt(row[k]) for k in ratio_columns)+'|' for label,row in report['ratios_to_FIELD_ONLY'].items())))
+    if report.get('ratios_to_baseline'):
+        ratio_columns=tuple(next(iter(report['ratios_to_baseline'].values())))
+        display(Markdown('|Variant / baseline|'+ '|'.join(ratio_columns)+'|\n|---|'+'|'.join(['---']*len(ratio_columns))+'|\n'+'\n'.join('|'+label+'|'+'|'.join(fmt(row[k]) for k in ratio_columns)+'|' for label,row in report['ratios_to_baseline'].items())))
     for label,message in report['missing'].items():print(label+': '+message)
     print(report['decision'])
     for path in report['figures']:display(Image(filename=path))
+
+
+def compare_wave_experiments(plans,verification,*,result=None,device='auto',count=128,chunk=128,display=True):
+    """One independent evaluation and compact report across both architectures."""
+    from types import SimpleNamespace
+    from .suite import _checkpoint_path
+    recovery={'status':'direct recorded results / explicit suite paths only'};paths={};runs={}
+    for plan in plans:
+        local={}
+        if plan.snapshot:local.update(plan.snapshot['entries'][plan.experiments[0]].get('runs',{}))
+        local.update(getattr(plan,'reused_runs',{}))
+        completed=(result or {}).get('architectures',{}).get(plan.model) or getattr(plan,'last_result',{})
+        if completed.get('entries'):local.update(completed['entries'][plan.experiments[0]]['runs'])
+        for variant in plan.settings.variant_settings:
+            label=plan.model+'/'+variant
+            paths[label]=_checkpoint_path(local[variant]) if variant in local else None
+            if variant in local:runs[label]=local[variant]
+    first=plans[0]
+    joined=SimpleNamespace(root=first.root,suite_id='wave-comparison-'+digest((tuple((p.suite_id,p.identity) for p in plans),tuple((label,runs.get(label,{}).get('checkpoint_id')) for label in paths)))[:20],certificate=first.certificate,
+        persistence=first.persistence,model='WAVE_COMPARISON')
+    root=Path(joined.root)/'learning_diagnostics'/'wave_kinematic'/joined.suite_id/'comparison'
+    return _evaluate_comparison(joined,verification[first.model],paths,runs,recovery,root,device=device,count=count,chunk=chunk,display=display)

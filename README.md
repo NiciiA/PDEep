@@ -874,3 +874,14 @@ The four-cell **Phase G — Wave consistency and kinematic training** section in
 an opt-in matched FIELD_ONLY/KIN_001/STAGED_001 study. It reuses existing numerical
 certification and verified local/Drive persistence; saved preview performs no
 optimizer updates. See [workflow and recovery details](docs/wave_kinematic_study.md).
+
+That wave section now includes five matched arms: **A_GEO/BASELINE,
+A_GEO/KIN_001, C_GEO/FIELD_ONLY, C_GEO/KIN_001, C_GEO/STAGED_001**. One shared
+configuration and one progress handle cover both unchanged architectures;
+training remains explicit; completed compatible checkpoints are reused only through explicitly supplied resume paths.
+
+The current four-cell wave workflow defaults to **fresh runs with no checkpoint
+search** (`WAVE_CHECKPOINT_LOOKUP="none"`). It displays preparation/training/save
+progress in the training cell. Resume uses only explicitly supplied manifest or
+suite paths; Drive saving remains enabled through the existing setup, independently
+of lookup. See the [current wave workflow](docs/wave_kinematic_study.md).

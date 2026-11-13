@@ -26,6 +26,7 @@ from ..smooth.training import select_device
 from .engine import DiagnosticConfig, diagnostic_source, approved_diagnostic, SCHEMA as CHECKPOINT_SCHEMA
 from .workflows import prepare_diagnostic, performance_preflight, launch_diagnostic
 from .dashboard import Dashboard
+from .wave_progress import observe
 
 DEFAULT_EXPERIMENTS=('poisson_rectangle','heat_single','wave_single')
 CATALOG={'poisson_square':('poisson','square'), 'poisson_rectangle':('poisson','rectangle'),
@@ -221,6 +222,15 @@ def _release():
     if torch.backends.mps.is_available():torch.mps.empty_cache()
 
 
+def _member_label(config,runs):
+    """Audited A FULL == BASELINE alias; keep the original resumable config."""
+    run=runs.get('BASELINE',{})
+    if run.get('objective_alias')=='A_FULL_is_BASELINE' and run.get('config_identity')==config.identity:
+        require(config.architecture=='A_GEO' and config.objective_variant=='FULL' and config.kinematic_weight==0 and config.physics_weights is None,'invalid A baseline checkpoint alias')
+        return 'BASELINE'
+    return config.objective_variant
+
+
 def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_callback=None,monitor=None):
     require(expected_identity==plan.identity and plan.source==diagnostic_source(),'suite plan changed; rerun preview')
     require(run_mode in {'preview','train','resume'},'suite run mode preview/train/resume only')
@@ -231,6 +241,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
     s=plan.snapshot or {'schema':SCHEMA,'suite_id':plan.suite_id,'configuration_hash':plan.identity,'certificate':plan.certificate['certification_id'],
         'order':list(plan.experiments),'entries':{n:{'experiment':n,'status':'pending','runs':{}} for n in plan.experiments},
         'active_experiment':None,'revision':0,'status':'preparing','preview':plan.preview(),'source':plan.source}
+    plan.last_result=s
     if plan.action=='fresh' and getattr(plan,'reused_runs',None):
         name=plan.experiments[0]
         for variant,run in plan.reused_runs.items():
@@ -253,10 +264,10 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
         # Ephemeral synchronization status is published in latest.json, not nested
         # recursively inside successive immutable snapshots.
         state={k:v for k,v in s.items() if k not in {'snapshot','suite_sync'}}
-        path=write_artifact(root/'snapshots',f'suite-state-{s["revision"]:08d}',
+        path=observe('SAVING VERIFIED LOCAL SUITE SNAPSHOT',lambda:write_artifact(root/'snapshots',f'suite-state-{s["revision"]:08d}',
             {'artifact_type':'diagnostic_bundle','architecture_id':plan.model,'run_id':plan.suite_id,'suite_schema':SCHEMA,'configuration_hash':s['configuration_hash']},
-            {'suite_state':state,'files':files},required=('suite_state','files'))
-        status=sync_verified(path,plan.persistence);s['snapshot']=str(path);s['suite_sync']=status
+            {'suite_state':state,'files':files},required=('suite_state','files')))
+        status=observe('SYNCHRONIZING SUITE SNAPSHOT TO DRIVE',lambda:sync_verified(path,plan.persistence));s['snapshot']=str(path);s['suite_sync']=status
         atomic_json(root/'latest.json',{'manifest':str(path),'Drive_manifest':status['Drive_manifest'],'sync':status})
         if status['Drive_status']=='failed':warnings.warn('SUITE DRIVE SYNC FAILED; verified local snapshot retained; Colab local storage is temporary. '+status['error'],RuntimeWarning)
         return path
@@ -301,6 +312,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                 query_time_policy=plan.settings.query_time_policy,query_sampler_seed=plan.settings.query_sampler_seed,
                 query_chunk=plan.settings.query_chunk,query_checkpointing=plan.settings.query_checkpointing,
                 amp_mode=plan.settings.amp_mode,memory_target_gb=plan.settings.memory_target_gb,query_revision='continuous-queries-v3',evaluation_times=(0.,.05,.1,.25,.5,.75,1.),variant_settings=plan.settings.variant_settings or None)
+            p.force_fp32=getattr(plan,'wave_force_fp32',False)
             require(p.data.case.case_id==recipe['physical_case'],'suite physical recipe differs from prepared case')
             # Check all variants' exact requested settings. Existing completed
             # ablation arms are not retrained when the other arm was interrupted.
@@ -310,23 +322,23 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                 if old and old.get('checkpoint'):
                     path=_verify_checkpoint(plan,old);meta,_=read_payload(path,required=('model',))
                     saved=DiagnosticConfig(**{**meta['config'],**{k:tuple(meta['config'][k]) for k in ('pdes','probabilities','training_families')}})
-                    require(asdict(replace(saved,resolved_amp_mode=c.resolved_amp_mode,diagnostic_source_id=c.diagnostic_source_id,run_tag=c.run_tag if old.get('reused_from') else saved.run_tag))==asdict(c),'requested suite settings differ from saved member')
+                    require(asdict(replace(saved,objective_variant=_member_label(saved,entry['runs']),resolved_amp_mode=c.resolved_amp_mode,diagnostic_source_id=c.diagnostic_source_id,run_tag=c.run_tag if old.get('reused_from') else saved.run_tag))==asdict(c),'requested suite settings differ from saved member')
                     from .inspection import load_model
                     fresh_models[i],_=load_model(path,plan.certificate,device=c.device);fresh_configs[i]=saved
             p.configs=tuple(fresh_configs);p.models=tuple(fresh_models);p.initial_model_ids=tuple(state_identity(m) for m in p.models)
             # Pilots never update weights. Also resolves auto precision on CPU/MPS.
             performance_preflight(p)
             for c in p.configs:
-                old=entry['runs'].get(c.objective_variant,{})
+                old=entry['runs'].get(_member_label(c,entry['runs']),{})
                 if old.get('checkpoint'):require(c.identity==old['config_identity'],'resume numerical precision pilot differs from checkpoint')
-            entry['runs'].update({c.objective_variant:{**entry['runs'].get(c.objective_variant,{}),
-                'status':entry['runs'].get(c.objective_variant,{}).get('status','pending'),'run_id':c.run_id,'config_identity':c.identity,
-                'initialization_identity':entry['runs'].get(c.objective_variant,{}).get('initialization_identity',mid),
+            entry['runs'].update({_member_label(c,entry['runs']):{**entry['runs'].get(_member_label(c,entry['runs']),{}),
+                'status':entry['runs'].get(_member_label(c,entry['runs']),{}).get('status','pending'),'run_id':c.run_id,'config_identity':c.identity,
+                'initialization_identity':entry['runs'].get(_member_label(c,entry['runs']),{}).get('initialization_identity',mid),
                 'initialization_seed':recipe['seed'],'data_identity':p.data.identity,'case_id':p.data.case.case_id,
                 'observation_identity':p.data.identities['observation'],'evaluation_identity':p.data.identities['diagnostic'],
-                'last_successful_update':entry['runs'].get(c.objective_variant,{}).get('last_successful_update',0),
-                'session_start_successful':entry['runs'].get(c.objective_variant,{}).get('session_start_successful',0),
-                'session_optimizer_updates':0,'result_origin':entry['runs'].get(c.objective_variant,{}).get('result_origin','newly trained'),
+                'last_successful_update':entry['runs'].get(_member_label(c,entry['runs']),{}).get('last_successful_update',0),
+                'session_start_successful':entry['runs'].get(_member_label(c,entry['runs']),{}).get('session_start_successful',0),
+                'session_optimizer_updates':0,'result_origin':entry['runs'].get(_member_label(c,entry['runs']),{}).get('result_origin','newly trained'),
                 'preflight':p.performance.get(c.objective_variant,{})} for c,mid in zip(p.configs,p.initial_model_ids)})
             # Release accelerator tensors; prepared CPU reference caches are reused.
             for m in p.models:m.cpu()
@@ -340,7 +352,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
             p=prepared[name]
             try:
                 for c,m in zip(p.configs,p.models):
-                    variant=c.objective_variant;run=entry['runs'][variant]
+                    variant=_member_label(c,entry['runs']);run=entry['runs'][variant]
                     if run['status']=='completed':continue
                     m.to(c.device);checkpoint=_verify_checkpoint(plan,run) if run.get('checkpoint') else None
                     # Restore into a new execution directory. Original local logs
@@ -351,14 +363,14 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                                 action='resume' if checkpoint else 'fresh',checkpoints=(checkpoint,),root=execution_root)
                     if checkpoint and run.get('history_manifest'):
                         _,history=read_payload(run['history_manifest'],kind='diagnostic_bundle',required=('history',))
-                        destination=Path(execution_root)/'learning_diagnostics'/name/variant/'G1_smooth_v1'/'runs'/plan.model/c.run_id
+                        destination=Path(execution_root)/'learning_diagnostics'/name/c.objective_variant/'G1_smooth_v1'/'runs'/plan.model/c.run_id
                         destination.mkdir(parents=True,exist_ok=True)
                         for filename,content in history['history'].items():
                             require(Path(filename).name==filename,'unsafe history path')
                             target=destination/filename
                             if not target.exists():target.write_text(content)
                     result=launch_diagnostic(one,expected_identity=one.identity,run_mode='resume' if checkpoint else 'train',monitor=dashboard,save_initial_checkpoint=True)
-                    engine=result[variant]
+                    engine=result[c.objective_variant]
                     require(engine.state.successful==c.updates and engine.state.failed==0,'experiment did not finish its requested successful updates')
                     # Final checkpoint MUST verify before marking the member complete.
                     meta=read_manifest(engine.state.last_checkpoint,kind='training_checkpoint',architecture=plan.model)

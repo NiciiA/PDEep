@@ -117,7 +117,7 @@ def test_four_cells_safe_defaults_and_evaluation_no_training():
     cells=[c for c in nb.cells if 'wave_kinematic' in c.metadata.get('tags',[])]
     assert len(cells)==4 and all(c.cell_type=='code' for c in cells)
     assert 'WAVE_RUN_MODE = "preview"' in cells[0].source
-    assert 'verify_wave(' in cells[1].source and 'run_wave_study(' in cells[2].source and 'compare_wave(' in cells[3].source
+    assert 'verify_wave_experiments(' in cells[1].source and 'run_wave_study(' in cells[2].source and 'compare_wave_experiments(' in cells[3].source
     for c in cells:
         ast.parse(c.source)
         for term in ('Button(','input(','Thread(','weights_only=False'):assert term not in c.source
@@ -134,18 +134,16 @@ def test_mocked_all_variants_once_one_dashboard_resume(certificate,tmp_path,synt
     runs=r['entries']['c_physics_ablation']['runs'];assert list(runs)==list(wave_study.VARIANTS)
     assert all(run['last_successful_update']==run['session_optimizer_updates']==2 for run in runs.values())
     before=list(synthetic_runtime.updates)
-    pp=prepare_wave_study(certificate=certificate,root=tmp_path,device='cpu',capacity='verification',updates=2,query_count=32,query_chunk=17,amp_mode='off')
+    pp=prepare_wave_study(certificate=certificate,root=tmp_path,device='cpu',capacity='verification',updates=2,query_count=32,query_chunk=17,amp_mode='off',checkpoint_lookup='explicit',action='resume',suite_path=r['snapshot'])
     rr=run_wave_study(pp,verification,run_mode='train',notebook=False)
     assert synthetic_runtime.updates==before
     assert all(run['session_optimizer_updates']==0 and run['result_origin']=='restored from completed checkpoint' for run in rr['entries']['c_physics_ablation']['runs'].values())
-    # Reject a corrupt newest immutable snapshot, recover an earlier verified
-    # revision, without touching any real/previous checkpoint.
+    # Explicit corruption fails closed; no fallback to any other saved revision.
     from pdeep.artifact_io import read_manifest
     latest=Path(rr['snapshot']);record=read_manifest(latest)
     pt=latest.parent/next(iter(record['files']));pt.write_bytes(pt.read_bytes()+b'explicit synthetic corruption')
-    with pytest.warns(RuntimeWarning,match='latest fully verified earlier snapshot'):
-        recovered=prepare_wave_study(certificate=certificate,root=tmp_path,device='cpu',capacity='verification',updates=2,query_count=32,query_chunk=17,amp_mode='off')
-    assert recovered.action=='resume' and recovered.snapshot_recovery_failures
+    with pytest.raises(ValidationError,match='checksum'):
+        prepare_wave_study(certificate=certificate,root=tmp_path,device='cpu',capacity='verification',updates=2,query_count=32,query_chunk=17,amp_mode='off',checkpoint_lookup='explicit',action='resume',suite_path=latest)
     assert synthetic_runtime.updates==before
 
 
@@ -167,7 +165,10 @@ def test_recovery_checks_actual_payload_data_case_schedule_and_initialization(un
           'runtime':{'dependencies':{'torch':torch.__version__}},'successful_update':2}
     payload={'model':m.state_dict(),'model_config':asdict(m.config),'optimizer':{},'scheduler':{},'rng':{},'sampler':{'observations':unit_data.identities['observation']},
              'training_state':{'successful':2},'normalizers':unit_data.normalizers.asdict()}
+    from wave_checkpoint_controls import states
+    payload.update(states(m,c,2,unit_data.identities['observation']))
     path=write_artifact(tmp_path/'learning_diagnostics'/'synthetic-candidate','diagnostic-update-00000002',meta,payload)
+    p.wave_lookup='explicit';p.wave_resume_paths={'FIELD_ONLY':str(path)}
     r=recover_wave_checkpoints(p,v);assert r['selected']['FIELD_ONLY']['successful']==2
     p.action='resume';p.snapshot={'entries':{'c_physics_ablation':{'runs':p.reused_runs}}}
     resumed=recover_wave_checkpoints(p,v)
@@ -177,12 +178,14 @@ def test_recovery_checks_actual_payload_data_case_schedule_and_initialization(un
     # Distinct case/observations/config/source are never matched by filename.
     for key,value in [('physical_case','wrong'),('observation_identity','wrong'),('data_identity','wrong'),('initialization_identity','wrong')]:
         if key=='initialization_identity':continue # raw checkpoints derive deterministic initialization from guarded source/seed
-        rr=recover_wave_checkpoints(p,{**v,key:value});assert not rr['selected'] and rr['rejected']
+        with pytest.raises(ValueError):recover_wave_checkpoints(p,{**v,key:value})
     c2=replace(c,query_chunk=16)
     bad=write_artifact(tmp_path/'learning_diagnostics'/'wrong-chunk','diagnostic-update-00000002',{**meta,'config':asdict(c2),'run_id':c2.run_id},payload)
-    assert any('configuration mismatch' in row['reason'] for row in recover_wave_checkpoints(p,v)['rejected'])
+    p.wave_resume_paths={'FIELD_ONLY':str(bad)}
+    with pytest.raises(ValueError,match='configuration mismatch'):recover_wave_checkpoints(p,v)
+    p.wave_resume_paths={'FIELD_ONLY':str(path)}
     record=read_manifest(path);pt=path.parent/next(iter(record['files']));pt.unlink()
-    rr=recover_wave_checkpoints(p,v);assert not rr['selected'] and rr['rejected']
+    with pytest.raises(ValueError):recover_wave_checkpoints(p,v)
 
 
 def test_evaluation_only_comparison_metrics_and_compact_figures(unit_data,certificate,tmp_path,monkeypatch):

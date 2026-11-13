@@ -85,6 +85,7 @@ def _metrics(pde):
 
 @pytest.fixture
 def synthetic_runtime(monkeypatch,certificate):
+    monkeypatch.setattr('pdeep.learning_diagnostics.wave_study._validate_resume_state',lambda *a,**kw:None)
     calls=[];prepared=[];init=[];failure={'name':None,'once':True};launch_updates=[]
     def prepare(**kw):
         name=kw['experiment'];pde,family=module.CATALOG[name];pde=kw.get('advanced',{}).get('pde',pde);family=kw.get('advanced',{}).get('family',family);seed=kw['seed'];case=Case(family,pde,'train',4*(seed%3000)+__import__('pdeep.smooth.definition',fromlist=['SEEN']).SEEN.index(family))
@@ -116,7 +117,7 @@ def synthetic_runtime(monkeypatch,certificate):
     def launch(plan,expected_identity,run_mode,monitor,**kwargs):
         assert expected_identity==plan.identity
         name=plan.data.case.pde;c=plan.configs[0];experiment=c.experiment;calls.append((experiment,run_mode))
-        assert len(prepared)>=len(DEFAULT_EXPERIMENTS) or experiment=='c_physics_ablation' or c.objective_variant in {'BASELINE','CLIP_2','CLIP_5','EARLY_TIME','EARLY_TIME_BEST_CLIP'}
+        assert len(prepared)>=len(DEFAULT_EXPERIMENTS) or experiment=='c_physics_ablation' or (experiment=='wave_single' and c.architecture=='A_GEO' and run_mode=='resume') or c.objective_variant in {'KIN_001','BASELINE','CLIP_2','CLIP_5','EARLY_TIME','EARLY_TIME_BEST_CLIP'}
         start=0
         if run_mode=='resume':_,pp=read_payload(plan.checkpoints[0]);start=pp['training_state']['successful']
         state=TrainingState(c.architecture,c.run_id);state.phase='ready';state.successful=start

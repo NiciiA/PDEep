@@ -151,3 +151,149 @@ def run_study(plan,*,run_mode='preview',notebook=True):
     studies.run_diagnostic_suite=monitored
     try:return studies.run_study(plan,run_mode=run_mode,notebook=notebook)
     finally:studies.run_diagnostic_suite=runner
+
+
+class WaveDashboard(VariantDashboard):
+    """Presentation over two existing suites; no scheduler or persisted manager."""
+    def __init__(self,plans,**kwargs):
+        self.architecture=plans[0].model
+        import threading,time
+        self._lock=threading.RLock();self._stop=threading.Event();self._heartbeat=None
+        self._started=time.monotonic();self._last_text=None;self._view={};self.phase_state={};self.failed_stage=None;self.last_successful=0;self._last_forced={}
+        self._heartbeat_seconds=float(kwargs.pop('heartbeat_seconds',5.));
+        self._external_renderer=kwargs.pop('renderer',None);self._fallback=False
+        self._notebook=kwargs.get('notebook',True);self._plans=plans
+        self.query_count=plans[0].settings.query_count;self.query_chunk=plans[0].settings.query_chunk
+        self.device=plans[0].settings.device;self.device_name=self.device
+        self.lookup='/'.join(sorted({getattr(p,'wave_lookup','none') for p in plans}))
+        self.wave_state={'order':[p.model for p in plans],'status':'running','entries':{},'preview':{'settings':{'updates':plans[0].settings.updates},'experiments':[]}}
+        for p in plans:
+            entry=next(iter(p.snapshot.get('entries',{}).values()),{}) if p.snapshot else {}
+            runs=entry.get('runs',getattr(p,'reused_runs',{}))
+            self.wave_state['entries'][p.model]={'status':entry.get('status','pending'),'runs':{p.model+'/'+v:run for v,run in runs.items()}}
+            self.wave_state['preview']['experiments'].append({'experiment':p.model,'variants':[p.model+'/'+v for v in p.settings.variant_settings]})
+        super().__init__(suite_state={},renderer=self._display,**kwargs)
+    def _copy_entry(self,architecture,state):
+        entry=next(iter(state.get('entries',{}).values()),{'status':'pending','runs':{}})
+        self.wave_state['entries'][architecture]={**entry,'runs':{architecture+'/'+label:run for label,run in entry.get('runs',{}).items()}}
+    def render(self,v):
+        self._view=dict(v);self.last_successful=int(v.get('successful',self.last_successful))
+        if v.get('architecture'):self.architecture=v['architecture']
+        if v.get('phase') is not None:self.phase_state.update(stage={'ready':'TRAINING','complete':'ARM COMPLETE'}.get(v['phase'],v['phase'].upper()),since=__import__('time').monotonic())
+        if v.get('phase')=='failed' and v.get('last_error'):self.failed_stage=str(v['last_error']).split(':',1)[0]
+        label=next((label for entry in self.suite_state.get('entries',{}).values() for label,run in entry.get('runs',{}).items() if v.get('run_id') and run.get('run_id')==v['run_id']),None)
+        if label:self.phase_state['variant']=self.architecture+'/'+label
+        local=self.suite_state
+        self._copy_entry(self.architecture,local)
+        try:
+            self.suite_state=self.wave_state
+            super().render(v)
+        finally:self.suite_state=local
+    def finish_architecture(self,architecture,result):
+        self._copy_entry(architecture,result)
+        if all(e['status']=='completed' for e in self.wave_state['entries'].values()):
+            self.wave_state['status']='completed';self.render(self.latest)
+
+
+    def update(self,config,state,step=None,validation=None):
+        before=self.render_count
+        result=super().update(config,state,step,validation)
+        if state.successful-self._last_forced.get(state.run_id,-10)>=10:
+            if self.render_count==before:self.render(result)
+            self._last_forced[state.run_id]=state.successful
+        return result
+
+    def _display(self,text,previous):
+        with self._lock:
+            self._last_text=text
+            if self._external_renderer is not None:
+                try:return self._external_renderer(text,previous)
+                except Exception as error:
+                    self._fallback=True
+                    if not self.errors:self.errors.append(str(error))
+            return self._emit(previous)
+
+    def _emit(self,previous=None):
+        import html,time
+        with self._lock:
+            v=dict(self._view);p=dict(self.progress);state=dict(self.phase_state)
+            def fmt(value):return '—' if value is None else f'{value:.5g}' if isinstance(value,float) else str(value)
+            perf=v.get('performance',{});memory=perf.get('memory',{}) or v.get('memory',{})
+            allocated=memory.get('allocated_bytes',memory.get('device_current_allocated_bytes'))
+            raw=v.get('unweighted',{});persistence=v.get('persistence',{});sync=persistence.get('last_sync',{})
+            completed=sum(run.get('status')=='completed' for entry in self.wave_state['entries'].values() for run in entry['runs'].values())
+            total=sum(len(r['variants']) for r in self.wave_state['preview']['experiments'])
+            current=state.get('variant') or p.get('current_variant') or self.architecture
+            since=state.get('since',self._started);elapsed=time.monotonic()-self._started
+            eta=p.get('current_variant_ETA_seconds')
+            matching=next((run for entry in self.wave_state['entries'].values() for run in entry['runs'].values() if run.get('run_id')==v.get('run_id')),{})
+            origin=matching.get('result_origin') or state.get('origin','fresh' if self.lookup=='none' else 'explicit resume / fresh unlisted arm')
+            fraction=perf.get('clipped_fraction')
+            fraction='—' if fraction is None else f'{100*fraction:.2f}%'
+            whole=p.get('whole_study_ETA_seconds') if 'unmeasured' not in p.get('ETA_scope','unmeasured') else None
+            step_seconds=perf.get('step_wall_seconds')
+            ups=1/step_seconds if step_seconds and step_seconds>0 else v.get('updates_per_second')
+            text=(f"PHASE G — WAVE TRAINING\nDerivative verification: {state.get('derivatives','PASSED' if v.get('successful') is not None else 'checking / preview')} | Checkpoint lookup: {'DISABLED' if self.lookup=='none' else 'EXPLICIT PATHS ONLY'}\n"
+                  f"Device: {self.device_name} | Drive saving: {'ENABLED' if self._plans[0].persistence.drive_enabled else 'DISABLED in setup'} | Queries: {self.query_count:,} | Chunk: {self.query_chunk:,}\n"
+                  f"Overall: {completed}/{total} models completed | {p.get('label','Preparing')}\nCurrent: {current} | Stage: {state.get('stage','STARTING')} ({time.monotonic()-since:.1f}s)\n"
+                  f"Origin: {origin} | Updates: {v.get('successful',0)}/{v.get('requested',self._plans[0].settings.updates)} successful\n"
+                  f"Field: {fmt(raw.get('field'))} | Auxiliary: {fmt(raw.get('auxiliary'))} | Kinematic: {fmt(raw.get('kinematic'))} | Total: {fmt(v.get('current_objective'))}\n"
+                  f"Gradient: {fmt(v.get('gradient_before_clip'))} → {fmt(v.get('gradient_after_clip'))} | Clipping fraction (rolling): {fraction}\n"
+                  f"Updates/s: {fmt(ups)} | Queries/s: {fmt(perf.get('queries_per_second'))} | Device allocated GB: {fmt(allocated/1e9 if allocated is not None else None)}\n"
+                  f"Cell elapsed: {elapsed:.1f}s | Current-variant ETA (measured): {fmt(eta)} s | Whole-study ETA (measured projection): {fmt(whole)} s\n"
+                  f"Local save: {persistence.get('local_status','not yet saved')} | Drive: {v.get('Drive_sync',persistence.get('Drive_status','not yet saved'))} | Verified: {sync.get('Drive_verified',False)}\n"
+                  f"Last checkpoint: {v.get('checkpoint') or state.get('checkpoint') or 'not yet saved'}\nDrive manifest: {sync.get('Drive_manifest') or 'not yet verified'}")
+            if v.get('Drive_sync')=='failed':text+='\nDRIVE SYNC FAILED — valid local checkpoint retained: '+str(sync.get('error'))
+            if state.get('error'):text+=f"\nERROR during {state.get('failed_stage',self.failed_stage)} at successful update {self.last_successful}: {state['error']}"
+            self.last_compact_text=text
+            if self._notebook and not self._fallback:
+                try:
+                    from IPython.display import display,HTML
+                    content=HTML('<pre style="white-space:pre-wrap;max-height:520px;overflow:auto">'+html.escape(text)+'</pre>')
+                    target=previous if previous is not None else self.handle
+                    if target is None:target=display(content,display_id=True)
+                    else:target.update(content)
+                    if target is None:raise RuntimeError('notebook display handle unavailable')
+                    self.handle=target;return target
+                except Exception as error:
+                    self._fallback=True
+                    print('Wave display refresh failed; using flushed text: '+str(error),flush=True)
+            if self._fallback or self._notebook:
+                print(text,flush=True)
+            return previous
+
+    def phase(self,stage,**details):
+        import time
+        with self._lock:
+            self.phase_state={**details,'stage':stage,'since':time.monotonic()}
+            if details.get('architecture'):self.architecture=details['architecture']
+            if details.get('variant'):
+                variant=details['variant']
+                if self.architecture=='A_GEO' and variant=='FULL' and any('A_GEO/BASELINE' in r['variants'] for r in self.wave_state['preview']['experiments']):variant='BASELINE'
+                label=self.architecture+'/'+variant
+                if label!=getattr(self,'_preparing_label',None):
+                    self._view={};self.last_successful=0;self._preparing_label=label
+                self.phase_state['variant']=label
+            self._emit()
+
+    def restore_phase(self,state):
+        with self._lock:self.phase_state=state or {};self._emit()
+
+    def live(self):
+        """UI-only heartbeat: never runs a model, solver, optimizer, RNG or save."""
+        from contextlib import contextmanager
+        from .learning_diagnostics.wave_progress import using_monitor
+        import threading
+        @contextmanager
+        def active():
+            self._stop.clear();self.failed_stage=None
+            self._view={};self.last_successful=0;self._preparing_label=None;self._last_forced={}
+            def tick():
+                while not self._stop.wait(self._heartbeat_seconds):self._emit()
+            self._heartbeat=threading.Thread(target=tick,name='wave-display-heartbeat',daemon=True)
+            self._heartbeat.start()
+            try:
+                with using_monitor(self):yield self
+            finally:
+                self._stop.set();self._heartbeat.join(timeout=1.)
+        return active()

@@ -18,9 +18,14 @@ def approved_diagnostic_predecessor(config):
         require(digest({k:v for k,v in proof.items() if k!='identity'})==proof['identity'],'wave compatibility proof checksum mismatch')
         from .engine import diagnostic_source
         if diagnostic_source()==proof['new_diagnostic_source'] and config.diagnostic_source_id in proof['approved_predecessors']:
-            # Optional new term is OFF for every predecessor. Never reinterpret
-            # an old weighted/staged objective or its query/resume state.
-            if getattr(config,'kinematic_weight',0.)!=0 or config.physics_schedule not in {'constant','staged_300_700'}:return False
+            # Old zero-kinematic objectives and explicitly audited C kinematic
+            # predecessors retain their exact objective/query/resume semantics.
+            if config.physics_schedule not in {'constant','staged_300_700','staged_fractional_30_40_30_v1'}:return False
+            if getattr(config,'kinematic_weight',0.)!=0:
+                allowed=proof.get('kinematic_architectures',{}).get(config.diagnostic_source_id,['C_GEO'] if config.diagnostic_source_id in proof.get('kinematic_predecessors',[]) else [])
+                architecture=getattr(config,'architecture',None)
+                weights_ok=(tuple(config.physics_weights or ())==(0.,0.,0.)) if architecture=='C_GEO' else config.physics_weights is None
+                if architecture not in allowed or not weights_ok or getattr(config,'objective_variant',None)!='KIN_001' or config.physics_schedule!='constant' or getattr(config,'kinematic_revision','wave-kinematic-v1')!='wave-kinematic-v1':return False
             require(all(sha256(root/p)==sha for p,sha in proof['unchanged_files'].items()),'wave compatibility requires unchanged model/physics/reference/shared optimizer')
             return True
     path=root/'certifications/G1_smooth_v1/portable/optimization_diagnostics_execution.json'

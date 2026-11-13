@@ -19,6 +19,7 @@ from ..artifact_drive import sync_verified
 from ..artifact_rng import capture_rng,restore_rng
 from .data import FixedSampler,EXPERIMENTS
 from .metrics import reconstruction,gradient_terms,representation
+from .wave_progress import observe,phase
 
 SCHEMA='G1_smooth-fixed-TRAIN-learning-diagnostics-v1'
 QUERY_FIELDS=('query_revision','query_mode','query_time_policy','query_sampler_seed','query_chunk','query_checkpointing','amp_mode','resolved_amp_mode','memory_target_gb','synchronize_timings')
@@ -81,7 +82,7 @@ class DiagnosticConfig(Config):
         require(self.objective_variant!='FIELD_ONLY' or self.architecture=='C_GEO','field-only ablation is C_GEO')
         require(np.isfinite(self.kinematic_weight) and self.kinematic_weight>=0 and 5<=self.kinematic_queries<=4096,'invalid kinematic weight/count')
         require(self.kinematic_revision=='wave-kinematic-v1','unknown kinematic sampler revision')
-        require(not self.kinematic_weight or (self.architecture=='C_GEO' and tuple(self.pdes)==('wave',) and self.objective_variant=='KIN_001' and self.physics_weights==(0.,0.,0.) and self.physics_schedule=='constant' and self.query_revision!='legacy-fixed-v1'),'kinematic objective requires explicit isolated C wave variant')
+        require(not self.kinematic_weight or (self.architecture in {'A_GEO','C_GEO'} and tuple(self.pdes)==('wave',) and self.objective_variant=='KIN_001' and (self.physics_weights==(0.,0.,0.) if self.architecture=='C_GEO' else self.physics_weights is None) and self.physics_schedule=='constant' and self.query_revision!='legacy-fixed-v1'),'kinematic objective requires explicit isolated A/C wave variant')
         require(self.objective_variant!='KIN_001' or self.kinematic_weight>0,'KIN_001 needs a positive declared weight')
         require(self.instrumentation_every>0,'positive instrumentation cadence required')
         require(len(self.pdes)==len(self.training_families)==1 and self.effective_batch==1,'fixed single TRAIN case required')
@@ -143,7 +144,7 @@ class DiagnosticEngine(Engine):
         self._configure_physics(self.state.successful)
         if hasattr(self.adapter,'kinematic_cursor'):self.adapter.kinematic_cursor=self.state.sampler_cursor
         if self.config.gradient_diagnostics_every and self.state.successful%self.config.gradient_diagnostics_every==0:
-            self._log('gradient_terms.jsonl',{'successful_update':self.state.successful,'physics_weights':__import__('pdeep.learning_diagnostics.study_controls',fromlist=['physics_weights']).physics_weights(self.config,self.state.successful),'report':gradient_terms(self.model,self.data.batch(self.config.device),self.adapter)})
+            self._log('gradient_terms.jsonl',{'successful_update':self.state.successful,'physics_weights':__import__('pdeep.learning_diagnostics.study_controls',fromlist=['physics_weights']).physics_weights(self.config,self.state.successful),'report':observe('PER-LOSS GRADIENT DIAGNOSTICS',lambda:gradient_terms(self.model,self.data.batch(self.config.device),self.adapter),architecture=self.config.architecture,variant=self.config.objective_variant)})
         if self.config.query_revision!='legacy-fixed-v1' and self.config.device.startswith('cuda'):
             require(self.performance_preflight.get('config_identity')==self.config.identity,'CUDA training requires the matching bounded memory/AMP preflight before updates')
             torch.cuda.reset_peak_memory_stats(self.config.device)
@@ -173,6 +174,7 @@ class DiagnosticEngine(Engine):
             self._log('module_updates.jsonl',{'step':self.state.successful,'modules':{k:{n.replace('_squared','_norm'):v**.5 for n,v in r.items()} for k,r in rows.items()},'gradient_scope':'after engine clipping; per-loss unclipped norms in gradient_terms.json'})
         return report
 
+    @phase('VALIDATION: independent fields / sensors / boundary')
     def validate(self,**kwargs):
         require(not self.state.accumulation_active,'validation only at optimizer boundary')
         start=time.perf_counter()
@@ -195,6 +197,7 @@ class DiagnosticEngine(Engine):
         self._log('validation.jsonl',asdict(report));self.monitor.diagnostic_metrics=m
         self._notify(validation=report);return report
 
+    @phase('LOCAL CHECKPOINT / HISTORY / DRIVE SAVE')
     def save_checkpoint(self):
         self._authorize(); require(not self.state.accumulation_active and self.state.phase!='failed','completed optimizer boundary required')
         start=time.monotonic()
@@ -202,28 +205,29 @@ class DiagnosticEngine(Engine):
         from ..diagnostics import source_identity
         meta={'artifact_type':'training_checkpoint','architecture_id':self.config.architecture,'run_id':self.config.run_id,'scientific_schema':SCHEMA,'benchmark':self.config.benchmark,'config':asdict(self.config),'certificate':self.certificate,'execution_qualification':self.execution_certificate,'implementation_identity':implementation_identity(),'diagnostic_source_id':self.config.diagnostic_source_id,'executing_diagnostic_source_id':diagnostic_source(),'fixed_data_identity':self.data.identity,'fixed_case':self.data.case.manifest,'fixed_data_path':self.data.path,'runtime':environment_report(),'source':source_identity(Path(__file__).resolve().parents[3]),'successful_update':self.state.successful,'result_status':'TRAIN memorization only; not research/generalization certification'}
         payload={'model':self.model.state_dict(),'model_config':asdict(self.model.config),'normalizers':self.normalizers.asdict(),'optimizer':self.optimizer.state_dict(),'scheduler':self.scheduler.state_dict(),'training_state':asdict(self.state),'rng':capture_rng(self.rng_generators),'sampler':self.sampler.state_dict(self.state.sampler_cursor),'best_validation_model':self.best_validation_model_state}
-        path=write_artifact(self.run_dir/'checkpoints',f'diagnostic-update-{self.state.successful:08d}',meta,payload,required=tuple(payload),idempotent=True)
+        path=observe('SAVING / VERIFYING LOCAL CHECKPOINT',lambda:write_artifact(self.run_dir/'checkpoints',f'diagnostic-update-{self.state.successful:08d}',meta,payload,required=tuple(payload),idempotent=True),architecture=self.config.architecture,variant=self.config.objective_variant)
         self.state.last_checkpoint=str(path);self.state.checkpoint_history.append({'step':self.state.successful,'path':str(path)})
-        status=sync_verified(path,self.persistence_policy);self.state.persistence.update(local_status='verified',Drive_status=status['Drive_status'],last_sync=status)
+        status=observe('SYNCHRONIZING VERIFIED CHECKPOINT / EXPORT TO DRIVE',lambda:sync_verified(path,self.persistence_policy),architecture=self.config.architecture,variant=self.config.objective_variant);self.state.persistence.update(local_status='verified',Drive_status=status['Drive_status'],last_sync=status)
         if status['Drive_status']=='failed':warnings.warn('DRIVE SYNC FAILED; valid local diagnostic checkpoint retained. Colab storage is temporary. '+status['error'],RuntimeWarning)
         # Preserve complete disk histories separately from the resumable tensor state.
         history={name:(self.run_dir/name).read_text() for name in ('steps.jsonl','validation.jsonl','performance.jsonl','module_updates.jsonl','gradient_terms.json','gradient_terms.jsonl','fixed_data.json') if (self.run_dir/name).exists()}
         history_path=write_artifact(self.run_dir/'history',f'history-{self.state.successful:08d}',{**meta,'artifact_type':'diagnostic_bundle'},{'history':history},required=('history',),idempotent=True)
-        hs=sync_verified(history_path,self.persistence_policy);self.state.persistence['history_sync']=hs
+        hs=observe('SYNCHRONIZING VERIFIED HISTORY TO DRIVE',lambda:sync_verified(history_path,self.persistence_policy));self.state.persistence['history_sync']=hs
         if hs['Drive_status']=='failed':warnings.warn('DRIVE HISTORY SYNC FAILED; local complete histories retained: '+hs['error'],RuntimeWarning)
         atomic_json(self.run_dir/'persistence.json',self.state.persistence);self.state.saving_seconds+=time.monotonic()-start;self._notify();return path
 
+    @phase('INFERENCE EXPORT / FINAL DIAGNOSTICS')
     def export(self):
         from ..diagnostics import source_identity
         meta={'artifact_type':'inference_export','architecture_id':self.config.architecture,'run_id':self.config.run_id,'scientific_schema':SCHEMA,'benchmark':self.config.benchmark,'config':asdict(self.config),'fixed_case':self.data.case.manifest,'certificate':self.certificate,'fixed_data_identity':self.data.identity,'implementation_identity':implementation_identity(),'diagnostic_source_id':diagnostic_source(),'source':source_identity(Path(__file__).resolve().parents[3])}
         payload={'model':self.model.state_dict(),'model_config':asdict(self.model.config),'normalizers':self.normalizers.asdict()}
         path=write_artifact(self.run_dir/'inference',f'inference-{self.state.successful:08d}',meta,payload,required=tuple(payload),idempotent=True)
-        status=sync_verified(path,self.persistence_policy);atomic_json(self.run_dir/'inference_sync.json',status)
+        status=observe('SYNCHRONIZING VERIFIED CHECKPOINT / EXPORT TO DRIVE',lambda:sync_verified(path,self.persistence_policy),architecture=self.config.architecture,variant=self.config.objective_variant);atomic_json(self.run_dir/'inference_sync.json',status)
         if status['Drive_status']=='failed':warnings.warn('DRIVE INFERENCE EXPORT SYNC FAILED; local export retained: '+status['error'],RuntimeWarning)
         # Persist detailed final diagnostics separately from inference weights.
         reports={p.name:p.read_text() for p in self.run_dir.glob('*.json') if p.name not in {'config.json','persistence.json','diagnostic_sync.json','inference_sync.json'}}
         bundle=write_artifact(self.run_dir/'diagnostics',f'final-report-{self.state.successful:08d}',{**meta,'artifact_type':'diagnostic_bundle'},{'reports':reports,'validation':None if self.latest_validation is None else asdict(self.latest_validation)},required=('reports','validation'),idempotent=True)
-        ds=sync_verified(bundle,self.persistence_policy);atomic_json(self.run_dir/'diagnostic_sync.json',ds)
+        ds=observe('SYNCHRONIZING FINAL DIAGNOSTICS TO DRIVE',lambda:sync_verified(bundle,self.persistence_policy));atomic_json(self.run_dir/'diagnostic_sync.json',ds)
         if ds['Drive_status']=='failed':warnings.warn('DRIVE DIAGNOSTICS SYNC FAILED; local report retained: '+ds['error'],RuntimeWarning)
         return path
 
