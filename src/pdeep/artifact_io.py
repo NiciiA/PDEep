@@ -62,7 +62,8 @@ def read_manifest(path, *, kind=None, architecture=None, verify_files=True):
 def read_payload(path, *, kind=None, architecture=None, required=()):
     record=read_manifest(path,kind=kind,architecture=architecture)
     payload_path=Path(path).parent/next(iter(record['files']))
-    payload=torch.load(payload_path,map_location='cpu',weights_only=True)
+    from .artifact_numpy_compat import load_verified_payload
+    payload=load_verified_payload(payload_path,record)
     require(isinstance(payload,dict) and all(k in payload for k in required),'artifact payload is missing required fields')
     from .artifact_tensors import tree_identity
     require(digest(tree_identity(payload))==record['payload_tree_identity'],'artifact payload tensor/schema identity mismatch')
@@ -75,10 +76,10 @@ def _publish(source,destination):
 
 
 def write_artifact(directory, stem, metadata, payload, *, required=(), idempotent=False):
-    from .artifact_tensors import tree_cpu,tree_identity
+    from .artifact_tensors import tree_cpu,tree_identity,native_scalars
     directory=Path(directory);directory.mkdir(parents=True,exist_ok=True)
     require(metadata.get('artifact_type') in KINDS,'artifact type required')
-    metadata=json.loads(canonical_json(metadata))
+    metadata=json.loads(canonical_json(native_scalars(metadata)))
     payload=tree_cpu(payload);tree_id=digest(tree_identity(payload))
     # Creation time is provenance, not a reason to duplicate identical exports.
     content_id=digest({'metadata':metadata,'payload_tree_identity':tree_id})
