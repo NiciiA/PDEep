@@ -86,7 +86,7 @@ def resolve_amp(model,batch,adapter,requested):
     if requested=='off':return {'resolved':'off','reason':'explicit FP32'}
     if batch.queries.position.device.type!='cuda':
         require(requested=='auto','BF16 requires a CUDA device and a numerical pilot');return {'resolved':'off','reason':'non-CUDA; preserve neural FP32'}
-    if model.config.architecture=='C_GEO' and not adapter.field_only:
+    if model.config.architecture=='C_GEO' and (not adapter.field_only or getattr(adapter,'kinematic_weight',0.)):
         require(requested=='auto','full C physics BF16 is not verified; choose off or auto (FP32)')
         return {'resolved':'off','reason':'full C coordinate-derivative physics uses verified FP32'}
     if not torch.cuda.is_bf16_supported(including_emulation=False):

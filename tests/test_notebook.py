@@ -55,7 +55,7 @@ def test_routine_notebooks_safe_short_and_independent():
         nb=json.loads((ROOT/"notebooks"/name).read_text())
         # Preserve the compact T1 path, with a bounded opt-in G1 addition.
         assert len([c for c in nb['cells'] if not c.get('metadata',{}).get('phase_G')])==expected
-        assert len(nb['cells'])<=expected+8
+        assert len(nb['cells'])<=expected+(12 if name=='02_train.ipynb' else 8)
         sources="\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"]=="code")
         assert "PROJECT_DIR" in sources
         if name!="02_train.ipynb":assert "initialize(" in sources

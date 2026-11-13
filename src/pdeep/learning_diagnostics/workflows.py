@@ -172,6 +172,10 @@ def performance_preflight(plan,*,counts=None,optimizer_step=False,cuda_kernel_pr
                 adapter.amp=c.resolved_amp_mode
             row=profile(m,bb,adapter,memory_target_gb=c.memory_target_gb,optimizer_step=optimizer_step,cuda_kernel_profile=cuda_kernel_profile);row['data_preparation']=pp;rows.append(row)
             if n==c.query_count:require(row['status']=='fits','configured query budget exceeds measured memory allowance; lower QUERY_COUNT/QUERY_CHUNK_SIZE or enable checkpointing')
-        outcomes[c.objective_variant]={'config_identity':c.identity,'precision':precision,'profiles':rows,'model_state_identity':state_identity(m)};configs.append(c)
+        gradients=gradient_terms(m,plan.data.batch(c.device),adapter) if c.kinematic_weight else None
+        if gradients and gradients['kinematic_gradient_dominates_100x']:
+            import warnings
+            warnings.warn('KINEMATIC GRADIENT DOMINATES FIELD >=100x. Configuration flagged; declared weight retained. Inspect gradient report before a long run.',RuntimeWarning)
+        outcomes[c.objective_variant]={'gradient_scale_diagnostics':gradients,'config_identity':c.identity,'precision':precision,'profiles':rows,'model_state_identity':state_identity(m)};configs.append(c)
     plan.configs=tuple(configs);plan.performance=outcomes;plan.reference_cache=reference_cache
     return outcomes

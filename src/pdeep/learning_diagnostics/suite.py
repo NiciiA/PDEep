@@ -145,7 +145,7 @@ def prepare_diagnostic_suite(experiment_names=DEFAULT_EXPERIMENTS,*,model='A_GEO
     if saved is not None:
         if saved['configuration_hash']!=plan.identity:
             from .suite_compatibility import approved_source
-            require(not settings.variant_settings and approved_source(saved.get('source')),'suite identity/configuration/source/certificate mismatch; restore the saved settings and source')
+            require(approved_source(saved.get('source')),'suite identity/configuration/source/certificate mismatch; restore the saved settings and source')
             current=plan.source;plan.source=saved['source']
             require(saved['configuration_hash']==plan.identity,'suite identity/configuration/source/certificate mismatch; restore the saved settings and source')
             plan.source=current
@@ -238,6 +238,11 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
             s['entries'][name]['runs'][variant]=run
         if all(s['entries'][name]['runs'].get(v,{}).get('status')=='completed' for v in _variants(name,plan.settings)):
             s['entries'][name]['status']='completed'
+    # Session accounting is independent of immutable snapshot revisions.
+    for entry in s['entries'].values():
+        for run in entry.get('runs',{}).values():
+            n=run.get('last_successful_update',0)
+            run.update(session_start_successful=n,session_optimizer_updates=0,result_origin='restored from completed checkpoint' if n>=plan.settings.updates else 'resumed' if n else 'newly trained')
     root.mkdir(parents=True,exist_ok=True)
     for relative,content in getattr(plan,'_restored_files',{}).items():
         dest=root/relative;require(dest.resolve().is_relative_to(root.resolve()),'unsafe suite report path')
@@ -261,6 +266,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
             for run in s['entries'][name]['runs'].values():
                 if run.get('run_id')==v['run_id']:
                     run['observed_update']=v['successful']
+                    run['session_optimizer_updates']=max(0,v['successful']-run.get('session_start_successful',0))
                     if v.get('checkpoint') and v['checkpoint']!=run.get('checkpoint'):
                         meta=read_manifest(v['checkpoint'],kind='training_checkpoint');last=v.get('persistence',{}).get('last_sync',{})
                         # sync_verified already checked the remote payload. Do
@@ -319,6 +325,8 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                 'initialization_seed':recipe['seed'],'data_identity':p.data.identity,'case_id':p.data.case.case_id,
                 'observation_identity':p.data.identities['observation'],'evaluation_identity':p.data.identities['diagnostic'],
                 'last_successful_update':entry['runs'].get(c.objective_variant,{}).get('last_successful_update',0),
+                'session_start_successful':entry['runs'].get(c.objective_variant,{}).get('session_start_successful',0),
+                'session_optimizer_updates':0,'result_origin':entry['runs'].get(c.objective_variant,{}).get('result_origin','newly trained'),
                 'preflight':p.performance.get(c.objective_variant,{})} for c,mid in zip(p.configs,p.initial_model_ids)})
             # Release accelerator tensors; prepared CPU reference caches are reused.
             for m in p.models:m.cpu()
@@ -358,6 +366,7 @@ def run_diagnostic_suite(plan,*,expected_identity,run_mode='preview',progress_ca
                     run.update(checkpoint=engine.state.last_checkpoint,checkpoint_id=meta['artifact_id'],last_successful_update=engine.state.successful,
                                Drive_checkpoint=last.get('Drive_manifest'),Drive_status=last.get('Drive_status','disabled'))
                     run['report']=collect_run(engine,root/name/variant,figures=False) if plan.settings.variant_settings else collect_run(engine,root/name/variant)
+                    run['session_optimizer_updates']=engine.state.successful-run.get('session_start_successful',0)
                     run['status']='completed';persist()
                     engine.model.cpu();del engine,result,one;_release()
                 entry['status']='completed';s['active_experiment']=None;persist()

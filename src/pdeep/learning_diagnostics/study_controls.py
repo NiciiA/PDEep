@@ -18,14 +18,15 @@ HEAT_VARIANTS={
 }
 
 def validate_variant(architecture,label,controls):
-    require(set(controls)<={'physics_weights','physics_schedule','query_time_policy','grad_clip_norm','gradient_diagnostics_every'},'unknown study variant control')
+    require(set(controls)<={'physics_weights','physics_schedule','query_time_policy','grad_clip_norm','gradient_diagnostics_every','kinematic_weight','kinematic_queries','kinematic_seed'},'unknown study variant control')
     require(architecture=='C_GEO' or 'physics_weights' not in controls,'physics controls require C_GEO')
-    require(label in C_VARIANTS or label in {'STAGED_001',*HEAT_VARIANTS,'EARLY_TIME_BEST_CLIP'},'unknown study label')
+    require(label in C_VARIANTS or label in {'KIN_001','STAGED_001',*HEAT_VARIANTS,'EARLY_TIME_BEST_CLIP'},'unknown study label')
 
 def physics_weights(config,successful=0):
     weights=config.physics_weights
     if weights is None:weights=(0.,0.,0.) if config.objective_variant=='FIELD_ONLY' or config.architecture!='C_GEO' else (.1,.1,.1)
-    factor=1. if config.physics_schedule=='constant' else max(0.,min(1.,(successful-300)/400))
+    start,end=(.3*config.updates,.7*config.updates) if config.physics_schedule=='staged_fractional_30_40_30_v1' else (300,700)
+    factor=1. if config.physics_schedule=='constant' else max(0.,min(1.,(successful-start)/(end-start)))
     return tuple(float(w)*factor for w in weights)
 
 def configured_adapter(config,successful=0):
@@ -34,4 +35,4 @@ def configured_adapter(config,successful=0):
     weak=WeakConfig(config.spatial_order,config.time_order,config.weak_tests,config.physics_chunk,
                     weak_weight=weights[0],initial_weight=weights[1],boundary_weight=weights[2])
     return QueryAdapter(config.architecture,weak,chunk=config.query_chunk,checkpointing=config.query_checkpointing,
-        field_only=config.architecture!='C_GEO' or not any(weights),amp=config.resolved_amp_mode)
+        field_only=config.architecture!='C_GEO' or not any(weights),amp=config.resolved_amp_mode,kinematic_weight=config.kinematic_weight,kinematic_queries=config.kinematic_queries,kinematic_seed=config.kinematic_seed,kinematic_cursor=successful)

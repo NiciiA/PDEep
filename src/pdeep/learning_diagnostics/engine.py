@@ -57,10 +57,14 @@ class DiagnosticConfig(Config):
     physics_weights: tuple | None=None  # weak, initial, boundary; explicit study controls
     physics_schedule: str='constant'
     gradient_diagnostics_every: int=0
+    kinematic_weight: float=0.
+    kinematic_queries: int=512
+    kinematic_seed: int=42
+    kinematic_revision: str='wave-kinematic-v1'
     @property
     def identity(self):
         values=asdict(self)
-        for key,default in [('physics_weights',None),('physics_schedule','constant'),('gradient_diagnostics_every',0)]:
+        for key,default in [('physics_weights',None),('physics_schedule','constant'),('gradient_diagnostics_every',0),('kinematic_weight',0.),('kinematic_queries',512),('kinematic_seed',42),('kinematic_revision','wave-kinematic-v1')]:
             if values[key]==default:values.pop(key)
         if self.query_revision=='legacy-fixed-v1':
             for k in QUERY_FIELDS:values.pop(k,None)
@@ -68,13 +72,17 @@ class DiagnosticConfig(Config):
     def __post_init__(self):
         super().__post_init__()
         require(self.experiment in EXPERIMENTS,'unknown learning diagnostic')
-        require(self.objective_variant in {'FULL','FIELD_ONLY','WEAK_001','ALL_001','ALL_01','FULL_01','STAGED_001','BASELINE','CLIP_2','CLIP_5','EARLY_TIME','EARLY_TIME_BEST_CLIP'},'unknown objective variant')
+        require(self.objective_variant in {'KIN_001','FULL','FIELD_ONLY','WEAK_001','ALL_001','ALL_01','FULL_01','STAGED_001','BASELINE','CLIP_2','CLIP_5','EARLY_TIME','EARLY_TIME_BEST_CLIP'},'unknown objective variant')
         require(self.physics_weights is None or len(self.physics_weights)==3 and all(np.isfinite(w) and w>=0 for w in self.physics_weights),'nonnegative finite physics weights required')
         if self.physics_weights is not None:object.__setattr__(self,'physics_weights',tuple(self.physics_weights))
-        require(self.physics_schedule in {'constant','staged_300_700'} and self.gradient_diagnostics_every>=0,'unknown physics schedule/gradient cadence')
+        require(self.physics_schedule in {'constant','staged_300_700','staged_fractional_30_40_30_v1'} and self.gradient_diagnostics_every>=0,'unknown physics schedule/gradient cadence')
         require(self.physics_weights is None or self.architecture=='C_GEO','physics weight studies require C_GEO')
         require(self.physics_schedule=='constant' or self.physics_weights is not None,'staged weights must be explicit')
         require(self.objective_variant!='FIELD_ONLY' or self.architecture=='C_GEO','field-only ablation is C_GEO')
+        require(np.isfinite(self.kinematic_weight) and self.kinematic_weight>=0 and 5<=self.kinematic_queries<=4096,'invalid kinematic weight/count')
+        require(self.kinematic_revision=='wave-kinematic-v1','unknown kinematic sampler revision')
+        require(not self.kinematic_weight or (self.architecture=='C_GEO' and tuple(self.pdes)==('wave',) and self.objective_variant=='KIN_001' and self.physics_weights==(0.,0.,0.) and self.physics_schedule=='constant' and self.query_revision!='legacy-fixed-v1'),'kinematic objective requires explicit isolated C wave variant')
+        require(self.objective_variant!='KIN_001' or self.kinematic_weight>0,'KIN_001 needs a positive declared weight')
         require(self.instrumentation_every>0,'positive instrumentation cadence required')
         require(len(self.pdes)==len(self.training_families)==1 and self.effective_batch==1,'fixed single TRAIN case required')
         require(self.query_revision in {'legacy-fixed-v1','continuous-queries-v2','continuous-queries-v3'},'unknown query execution revision')
@@ -102,9 +110,9 @@ class DiagnosticEngine(Engine):
         self.sampler=FixedSampler(data,config)
         if config.query_revision!='legacy-fixed-v1':
             from .queries import QuerySampler
-            from .query_loss import QueryAdapter
+            from .study_controls import configured_adapter
             self.sampler=QuerySampler(data,config)
-            self.adapter=QueryAdapter(config.architecture,self.adapter.weak,chunk=config.query_chunk,checkpointing=config.query_checkpointing,field_only=config.objective_variant=='FIELD_ONLY',amp=config.resolved_amp_mode)
+            self.adapter=configured_adapter(config)
         self._configure_physics(0)
         self.latest_performance={};self.performance_preflight={};self._device_events={};self._device_phase=None
         if config.objective_variant=='FIELD_ONLY' and config.query_revision=='legacy-fixed-v1':self.adapter=FieldOnly(config.architecture,self.adapter.weak)
@@ -115,6 +123,7 @@ class DiagnosticEngine(Engine):
 
     def _configure_physics(self,successful):
         if self.config.query_revision=='legacy-fixed-v1':return
+        self.adapter.kinematic_cursor=successful
         from dataclasses import replace
         from .study_controls import physics_weights
         w=physics_weights(self.config,successful)
@@ -132,6 +141,7 @@ class DiagnosticEngine(Engine):
 
     def update(self,batch=None):
         self._configure_physics(self.state.successful)
+        if hasattr(self.adapter,'kinematic_cursor'):self.adapter.kinematic_cursor=self.state.sampler_cursor
         if self.config.gradient_diagnostics_every and self.state.successful%self.config.gradient_diagnostics_every==0:
             self._log('gradient_terms.jsonl',{'successful_update':self.state.successful,'physics_weights':__import__('pdeep.learning_diagnostics.study_controls',fromlist=['physics_weights']).physics_weights(self.config,self.state.successful),'report':gradient_terms(self.model,self.data.batch(self.config.device),self.adapter)})
         if self.config.query_revision!='legacy-fixed-v1' and self.config.device.startswith('cuda'):
@@ -236,6 +246,7 @@ def resume_diagnostic(path,root,*,data,certificate,config,persistence=None,monit
     if not engine.state.checkpoint_history or engine.state.checkpoint_history[-1]['step']!=engine.state.successful:engine.state.checkpoint_history.append({'step':engine.state.successful,'path':str(path)})
     require(digest(p['sampler'])==digest(engine.sampler.state_dict(engine.state.sampler_cursor)),'fixed sampler resume mismatch')
     engine._configure_physics(engine.state.successful)
+    if hasattr(engine.adapter,'kinematic_cursor'):engine.adapter.kinematic_cursor=engine.state.sampler_cursor
     engine.best_validation_model_state=p.get('best_validation_model');engine.parent_checkpoints=[str(path)];engine._elapsed_base=engine.state.elapsed_seconds
     engine.rng_generators,limitations=restore_rng(p['rng'],target_device=config.device);require(not limitations,'exact RNG restore unavailable: '+str(limitations))
     return engine

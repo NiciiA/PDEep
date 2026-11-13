@@ -22,7 +22,8 @@ class _ReusableCacheScope:
     def __exit__(self,*args):return self.scopes.pop().__exit__(*args)
 
 class QueryAdapter:
-    def __init__(self,architecture,weak,*,chunk=512,checkpointing=True,field_only=False,amp='off',cache=None):
+    def __init__(self,architecture,weak,*,chunk=512,checkpointing=True,field_only=False,amp='off',cache=None,kinematic_weight=0.,kinematic_queries=512,kinematic_seed=42,kinematic_cursor=0):
+        self.kinematic_weight=kinematic_weight;self.kinematic_queries=kinematic_queries;self.kinematic_seed=kinematic_seed;self.kinematic_cursor=kinematic_cursor
         self.architecture=architecture;self.weak=weak;self.chunk=chunk;self.checkpointing=checkpointing;self.field_only=field_only;self.amp=amp;self.cache=cache or InputCache();self.last={}
     def autocast(self,device):return torch.autocast('cuda',dtype=torch.bfloat16) if self.amp=='bf16' else nullcontext()
     def loss(self,model,batch,*,detailed=False):
@@ -78,5 +79,12 @@ class QueryAdapter:
                 physical_context=model.prepare_context(batch.specs,batch.observations) if self.amp!='off' else contexts
                 physical=weak_loss(model,physical_context,batch.normalizers,self.weak);physical.pop('diagnostics');raw.update(physical)
                 weighted.update(weak=self.weak.weak_weight*raw['weak'],initial=self.weak.initial_weight*raw['initial'],boundary=self.weak.boundary_weight*raw['boundary'])
-        self.last={'forward_CPU_enqueue_seconds':time.perf_counter()-start,'context_count':len(contexts),'checkpointing':self.checkpointing,'query_chunk':self.chunk,'amp':self.amp,'static_cache_hits':self.cache.hits,'static_cache_misses':self.cache.misses,'per_quantity_supervision':quantity_reports}
+        kin_report=[]
+        if self.kinematic_weight:
+            from .kinematic import kinematic_loss
+            require(self.amp=='off','kinematic derivatives require FP32; BF16 is not validated')
+            with using(self.cache):
+                raw['kinematic'],kin_report=kinematic_loss(model,zip(contexts,batch.cases),batch.normalizers,count=self.kinematic_queries,seed=self.kinematic_seed,cursor=self.kinematic_cursor,chunk=min(self.chunk,512))
+            weighted['kinematic']=self.kinematic_weight*raw['kinematic']
+        self.last={'kinematic':kin_report,'kinematic_weight':self.kinematic_weight,'forward_CPU_enqueue_seconds':time.perf_counter()-start,'context_count':len(contexts),'checkpointing':self.checkpointing,'query_chunk':self.chunk,'amp':self.amp,'static_cache_hits':self.cache.hits,'static_cache_misses':self.cache.misses,'per_quantity_supervision':quantity_reports}
         return LossReport(sum(weighted.values()),raw,weighted,{k:'unchanged equal-case/quantity loss; sums divided by GLOBAL valid counts before chunk addition' for k in raw},{'cases':len(batch.cases),'valid_queries':int(batch.queries.valid.sum()),'active_coefficients':0,'valid_observations':int(batch.observations.valid.sum())},self.last.copy())

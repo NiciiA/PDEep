@@ -88,12 +88,17 @@ def gradient_terms(model,batch,adapter):
     for name,loss in report.weighted.items():
         g=torch.autograd.grad(loss,params,retain_graph=True,allow_unused=True)
         vec=torch.cat([(torch.zeros_like(p) if v is None else v).detach().flatten().cpu() for p,v in zip(params,g)])
-        vectors[name]=vec; grads[name]=float(vec.norm()); modules[name]={}
+        vectors[name]=vec; grads[name]=float(vec.double().norm()); modules[name]={}
         for (pn,p),v in zip(named,g):
-            top=pn.split('.')[0]; modules[name][top]=modules[name].get(top,0.)+(0 if v is None else scalar(v.square().sum()))
+            top=pn.split('.')[0]; modules[name][top]=modules[name].get(top,0.)+(0 if v is None else float(v.detach().cpu().double().square().sum()))
         modules[name]={k:math.sqrt(v) for k,v in modules[name].items()}
+    raw_norms={}
+    for name,loss in report.unweighted.items():
+        g=torch.autograd.grad(loss,params,retain_graph=True,allow_unused=True)
+        raw_norms[name]=math.sqrt(sum(0. if v is None else float(v.detach().cpu().double().square().sum()) for v in g))
+    dominance=grads.get('kinematic',0.)/max(grads.get('field',0.),1e-30)
     cosine={f'{a}:{b}':float(vectors[a]@vectors[b]/(vectors[a].norm()*vectors[b].norm())) if vectors[a].norm()*vectors[b].norm()>0 else None for a in vectors for b in vectors if a<b}
-    return {'raw':{k:scalar(v) for k,v in report.unweighted.items()},'weighted':{k:scalar(v) for k,v in report.weighted.items()},'total':scalar(report.total),'weighted_gradient_norms':grads,'per_module_weighted_gradient_norms':modules,'weighted_gradient_cosines':cosine,'optimizer_updates':0}
+    return {'raw':{k:scalar(v) for k,v in report.unweighted.items()},'weighted':{k:scalar(v) for k,v in report.weighted.items()},'total':scalar(report.total),'raw_gradient_norms':raw_norms,'weighted_kinematic_to_field_gradient_ratio':dominance,'kinematic_gradient_dominates_100x':dominance>=100,'weighted_gradient_norms':grads,'per_module_weighted_gradient_norms':modules,'weighted_gradient_cosines':cosine,'optimizer_updates':0}
 
 
 def representation(model,data):
