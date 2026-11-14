@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_technical_notebook_sections_and_safe_prefix():
     paths = list((ROOT / "notebooks").glob("*.ipynb"))
-    assert {p.name for p in paths} == {"pde_inverse_research.ipynb","01_explore.ipynb","02_train.ipynb","03_evaluate.ipynb"}
-    nb = json.loads(paths[0].read_text())
+    assert {p.name for p in paths} == {"pde_inverse_research.ipynb","01_explore.ipynb","02_train.ipynb","03_evaluate.ipynb","04_g1_unified.ipynb"}
+    nb = json.loads((ROOT / "notebooks/pde_inverse_research.ipynb").read_text())
     headings = [re.match(r"## (\d{2})\.", "".join(c["source"])) for c in nb["cells"] if c["cell_type"] == "markdown"]
     assert [m.group(1) for m in headings if m] == [f"{i:02d}" for i in range(1, 16)]
     first_future = next((i for i, c in enumerate(nb["cells"]) if "future-section" in c.get("metadata", {}).get("tags", [])), len(nb["cells"]))

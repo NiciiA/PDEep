@@ -1,6 +1,94 @@
 # PDE inverse reconstruction research
 
-## Current workflow: G1_smooth_v1
+## Unified G1 research workflow (new)
+
+Use [04_g1_unified.ipynb](notebooks/04_g1_unified.ipynb) for **one shared network
+per configuration across all3 PDEs ×8 fixed qualified geometry instances**.
+The three independent configurations are A_GEO/KIN_001, C_GEO/FIELD_ONLY and
+C_GEO/ALL_001. Existing diagnostic notebooks/runs remain available below.
+Scientific choices and limits: [G1 unified experiment v1](docs/g1_unified_experiment_v1.md).
+Bounded implementation evidence: `reports/g1_unified/report.md` and JSON reports.
+
+Open directly after reviewing/pushing the new code and notebook to your repository:
+
+```
+https://colab.research.google.com/github/OWNER/REPO/blob/REF/notebooks/04_g1_unified.ipynb
+```
+
+No push was performed here. Replace OWNER/REPO and REF; configure `REPO_URL` in
+section1 and preferably pin `REPO_REF` to that full commit SHA. Private Git access
+uses an external credential helper/SSH agent, never embedded notebook credentials.
+Select a CUDA runtime. Run the setup cells (advanced implementation is collapsed)
+and existing-certificate resolution. Colab validates CUDA without CPU fallback;
+local CPU/MPS uses the installed checkout without importing or mounting Drive.
+
+1. **Configure** section2. Saved defaults are research data target (3072/768/1536
+   physical cases), medium networks,4 independent cases/update,4096 queries/case,
+  30,000-update schedule and a3,000-update session stop. Preview performs no
+   dataset preparation or optimization. For your first bounded user-run pilot,
+   use `G1_MODE="smoke"`:2/2/2 cases/task,128 queries,3 planned updates, stop2.
+   Dataset preset `pilot` instead prepares768/384/384 independent physical cases.
+2. **Prepare**: deliberately set `G1_DATA_ACTION="prepare"`, rerun configuration
+   and section3. This is CPU/storage expensive. Each physical case uses the full existing CPU64 P4 solver once. Only labels for
+   its EXACT independent continuous encounter draws are retained (roughly5GB
+   research payload); full trajectories are discarded. No bank is recycled and no
+   PDE solver runs inside GPU updates. Per-case QC is required. First TRAIN case/task gets separate independent finer-reference checks.
+   Failures quarantine cases and block training. This does not rerun/overwrite
+   the old96-case qualification or imply a universal certificate.
+3. **Preflight**: set `G1_RUN_PREFLIGHT=True` and run section4 after loading data.
+   Zero optimizer updates; actual configured query count and largest selected
+   conditioning geometry/PDE,128 sensors, derivative paths and CUDA memory.
+   A one-case graph is accumulated four times. AMP auto explicitly resolves to
+   FP32; unverified T4 BF16/FP16 derivative training is not assumed.
+4. **Train**: set `G1_RUN_MODE="train"`, rerun configuration, load the known local
+   dataset index (`G1_DATA_ACTION="load"`), rerun preflight and execute the ONE
+   section5 training cell. It sequentially runs the selected configurations.
+   A live dashboard stays in that cell. No buttons or manual between-model edits.
+5. **Evaluate**: set `G1_EVALUATE=True`, select exact paths (or use the just-run
+   results), then section6. Default validation; deliberately select test only
+   after tuning/checkpoint selection. Section7 displays a few aggregate figures.
+   Full per-case/quantity data, paired intervals and Markdown/JSON reports go to
+   `local_output/G1_unified/evaluations/<experiment>/<split>/<selection>/`.
+
+**Disconnect and exact resume.** Checkpoints save/verify locally first, then sync
+at the save cadence. Predictable Drive locations:
+
+```
+DriveRoot/G1_unified/datasets/<dataset_id>/index.json
+DriveRoot/G1_unified/runs/<experiment_id>/experiment.json
+DriveRoot/G1_unified/runs/<experiment_id>/<model>/checkpoints/<run_id>/<artifact_id>/
+```
+
+The dataset index records exact verified label-case and sampling-space artifact locations. Training
+reads fast local storage, never random-access Drive. After a new runtime: run
+setup; restore using `G1_DATA_ACTION="restore"` and the exact Drive dataset index;
+keep the original experiment ID, full schedule, model/data settings and seed;
+use `G1_ACTION="resume"`, `G1_CHECKPOINT_LOOKUP="explicit"` and exact manifests:
+
+```python
+from pdeep.unified.workflow import explicit_experiment_paths
+G1_RESUME_PATHS = explicit_experiment_paths(
+    "/content/drive/MyDrive/PDEInverseResearch/G1_unified/runs/EXPERIMENT/experiment.json",
+    prefer_drive=True,
+)
+```
+
+Place this after shared configuration and before training, retaining the ORIGINAL
+`G1_EXPERIMENT_ID`. Rerun preflight. Set session stop30,000 to continue the ORIGINAL
+30,000 schedule, rather than extending a3,000 schedule. Compatible finished models
+are retained; supplied partial models resume; selected models with no prior path
+start fresh. No legacy single-case warm-start or recursive checkpoint search.
+Resume restores weights, Adam moments, scheduler, RNG, keyed data ordering and
+successful counters. Source/Torch/device/config mismatches reject exact resume.
+Drive failures warn and preserve local artifacts; local Colab storage is temporary.
+
+All-eight evaluation measures unseen fields on familiar instances. A separately
+configured family holdout excludes that family from training and checkpoint
+selection. Additional geometry instances remain blocked until independently
+qualified. Three separate neural seeds (`G1_NEURAL_SEED`, with the fixed data seed unchanged) are supported but never launched
+automatically. There is no full-training/generalization claim before execution.
+
+## Existing diagnostic workflow: G1_smooth_v1
 
 `02_train.ipynb` now defaults to the separately versioned smooth geometry benchmark.
 Original rough G1 remains blocked. T1 physics, exact D, A/B0/B1/C APIs, checkpoints
