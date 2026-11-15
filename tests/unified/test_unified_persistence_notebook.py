@@ -52,7 +52,7 @@ def test_new_notebook_safe_compact_independent_defaults():
     root=Path(__file__).resolve().parents[2];n=nbformat.read(root/'notebooks/04_g1_unified.ipynb',4);nbformat.validate(n)
     assert len(n.cells)<=20
     code='\n'.join(c.source for c in n.cells if c.cell_type=='code');ast.parse(code)
-    for literal in ('G1_RUN_MODE = "preview"','G1_DATA_ACTION = "preview"','G1_RUN_PREFLIGHT = False','G1_EVALUATE = False','G1_CHECKPOINT_LOOKUP = "none"','G1_TARGET_SUCCESSFUL_UPDATES = 30000','G1_STOP_AFTER_UPDATES = 3000'):
+    for literal in ('G1_RUN_MODE = "preview"','G1_DATA_ACTION = "preview"','G1_RUN_PREFLIGHT = False','G1_EVALUATE = False','G1_CHECKPOINT_LOOKUP = "none"','G1_TARGET_SUCCESSFUL_UPDATES = 50000','G1_STOP_AFTER_UPDATES = 50000'):
         assert literal in code
     assert '02_train.ipynb' not in code and '03_evaluate.ipynb' not in code
     assert code.count('G1_RESULT = train_models(')==1

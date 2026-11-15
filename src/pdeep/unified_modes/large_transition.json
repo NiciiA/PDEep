@@ -1,0 +1,10 @@
+{
+  "before": "2ee0f491bf72d71bae93b2f650e2df78d3574c5f20fbe6cf396827aba40e9a9d",
+  "after": "872ddbf54c97f0950be345a26ade2720867f8cac62ad9243efc291cda009b58f",
+  "capacities": [
+    "medium",
+    "verification"
+  ],
+  "review": "Reviewed large-preset/monitoring/metadata/preflight/playground extension. Medium and verification ModelConfig, seeded parameter initialization, tensor shapes, forward/derivative pathways, loss and optimizer algorithms unchanged. Exact saved full definitions, configs, runtime, tensors, Adam, RNG and sampler checks retained. Old large256 is intentionally excluded.",
+  "base_after": "5ce32466042fa2ab90f79f359c68e2babc17d1b85542f92aebe9717c67a28ef1"
+}

@@ -1,0 +1,15 @@
+{
+  "before": "0ec371fde68274a136ba23f6390a9028d6c917940236d5d511c15be6d8e5115a",
+  "after": "16b77c6df38338f85ccd178fbf103969812021f0b6415515926e5fec3d661373",
+  "review": "Only dashboard re-export, scalar log hook, scalar monitor checkpoint/restore and reviewed source guard changed. Optimizer/update/loss/model/data/reference code unchanged. All other checkpoint/config/Torch/tensor/Adam/RNG checks retained.",
+  "changed_files": {
+    "src/pdeep/unified/monitor.py": {
+      "before": "4dddab572c9d82f8bf91c305b6b3f9fa79fa7179aa40389d2273ab8212d9be3b",
+      "after": "0ca59e0cd021f3b01f8535611f21c66a3ca32636b2e6d219ffcfd2750b764a38"
+    },
+    "src/pdeep/unified/training.py": {
+      "before": "318936cd9e05f3f31380f1ac91829b2a3396d9ad10d2d2c5e68f1066e4750bc1",
+      "after": "9a9284fa4e4ab8fe0e5b82f19a421924e7c3c499962ec0154171f0c6c0121899"
+    }
+  }
+}

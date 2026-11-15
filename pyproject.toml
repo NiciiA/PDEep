@@ -21,3 +21,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.setuptools.package-data]
+"pdeep.unified_bayes" = ["*.json"]
+"pdeep.unified_modes" = ["*.json"]

@@ -22,15 +22,18 @@ from .loss import UnifiedAdapter
 from .evaluation import evaluate_model
 from .monitor import Dashboard
 from .persistence import policy_at,sync
+from ..unified_bayes.compatibility import approved_source
 
 
 class _SessionBoundary(Exception):pass
 
 
 class Engine(TrainingEngine):
+    def expected_model_config(self,config):
+        return ModelConfig.preset(config.architecture,config.capacity)
     def __init__(self,config,dataset,root,*,monitor=None,persistence=None,model=None,allow_existing=False):
         require(config.dataset_identity==dataset.config.identity,'training/dataset identity mismatch')
-        require(config.source_id==implementation_identity(),'source changed after preview/configuration')
+        require(approved_source(config.source_id),'source changed after preview/configuration')
         self.monitor=monitor or Dashboard(dataset.config,notebook=False)
         self.monitor.phase('Dataset cache loading',model=config.model_key)
         dataset.progress=self.monitor.phase
@@ -47,7 +50,7 @@ class Engine(TrainingEngine):
         self.rng_generators={};self.parent_checkpoints=[];self.scaler=None;self.best_validation_model_state=None;self.session_stop=config.updates;self.history_refs=[]
         self.monitor.phase('Model construction',model=config.model_key)
         self.model=model if model is not None else create(config.architecture,self.normalizers,config.capacity,seed=config.root_seed,device=config.device)
-        require(self.model.config==ModelConfig.preset(config.architecture,config.capacity),'architecture was modified')
+        require(self.model.config==self.expected_model_config(config),'architecture was modified')
         require(self.model.normalizers.identity==self.normalizers.identity,'model normalization mismatch')
         self.adapter=UnifiedAdapter(config);self.sampler=BalancedSampler(config,dataset)
         self.optimizer=torch.optim.AdamW(self.model.parameters(),lr=config.learning_rate,weight_decay=config.weight_decay)
@@ -70,6 +73,7 @@ class Engine(TrainingEngine):
         if name=='steps.jsonl' and hasattr(self,'_update_start'):
             self._last_update_wall=time.perf_counter()-self._update_start
             value.setdefault('details',{})['measured_update_wall_seconds']=self._last_update_wall
+        if name=='case_losses.jsonl':self.monitor.objectives(value)
         return TrainingEngine._log(self,name,value)
     def _notify(self,step=None,validation=None):
         if step is not None and hasattr(self,'_last_update_wall'):
@@ -106,7 +110,7 @@ class Engine(TrainingEngine):
         finally:self.state.phase=previous if previous!='validation' else 'ready'
     def save_checkpoint(self):
         require(not self.state.accumulation_active and self.state.phase!='failed','cannot checkpoint partial/failed update')
-        require(self.config.source_id==implementation_identity(),'source changed under active process; preserving existing checkpoints')
+        require(approved_source(self.config.source_id),'source changed under active process; preserving existing checkpoints')
         self.monitor.phase('Checkpoint saving',model=self.config.model_key,successful=self.state.successful);start=time.perf_counter()
         root=Path(__file__).resolve().parents[3]
         meta={'artifact_type':'training_checkpoint','architecture_id':self.config.architecture,'run_id':self.config.run_id,
@@ -117,15 +121,18 @@ class Engine(TrainingEngine):
               'source':source_identity(root),'implementation_identity':implementation_identity(),'runtime':environment_report(),
               'successful_update':self.state.successful,'result_status':'unified multicase training; no accuracy claim before independent evaluation',
               'reference_scope':'sampled certificate + per-case QC + separate stratified dataset qualification',
-              'parents':self.parent_checkpoints}
+              'parents':self.parent_checkpoints,
+              'parameter_counts':{'total_parameters':sum(p.numel() for p in self.model.parameters()),
+                                  'trainable_parameters':sum(p.numel() for p in self.model.parameters() if p.requires_grad)}}
         from .history import archive
         archive(self)
-        payload={'history_refs':self.history_refs,'model':self.model.state_dict(),'optimizer':self.optimizer.state_dict(),'scheduler':self.scheduler.state_dict(),'scaler':None,
+        payload={'monitor_state':self.monitor.state_dict(),'history_refs':self.history_refs,'model':self.model.state_dict(),'optimizer':self.optimizer.state_dict(),'scheduler':self.scheduler.state_dict(),'scaler':None,
                  'training_state':asdict(self.state),'rng':capture_rng(self.rng_generators),'sampler':self.sampler.state_dict(self.state.sampler_cursor),
                  'best_validation_model':self.best_validation_model_state,'normalizers':self.normalizers.asdict()}
         path=write_artifact(self.run_dir/'checkpoints',f'unified-update-{self.state.successful:08d}',meta,payload,required=tuple(payload))
         self.state.last_checkpoint=str(path);self.state.checkpoint_history.append({'step':self.state.successful,'path':str(path)})
         if self.state.best_validation_step==self.state.successful:self.state.best_checkpoint=str(path)
+        if self.persistence_policy.drive_enabled:self.monitor.phase('Syncing Drive',model=self.config.model_key,successful=self.state.successful,last_verified_local_checkpoint=str(path))
         status=sync(path,self.persistence_policy);self.state.persistence.update(local_status='verified',Drive_status=status['Drive_status'],last_sync=status)
         if self.state.best_validation_step==self.state.successful:self.state.persistence['Drive_best']=status.get('Drive_manifest')
         backlog=list(self.state.persistence.get('backlog',[]))
@@ -146,7 +153,7 @@ class Engine(TrainingEngine):
             except Exception as error:
                 import warnings
                 warnings.warn('DRIVE EXPERIMENT INDEX FAILED; local registry/checkpoints retained: '+str(error),RuntimeWarning)
-        self.state.saving_seconds+=time.perf_counter()-start;self._notify();return path
+        duration=time.perf_counter()-start;self.state.saving_seconds+=duration;self.monitor.saved(duration,status);self._notify();return path
     def summary(self,status):
         return {'status':status,'model':self.config.model_key,'config':asdict(self.config),'run_dir':str(self.run_dir),'successful':self.state.successful,
                 'latest':self.state.last_checkpoint,'best':self.state.best_checkpoint,'persistence':self.state.persistence,
@@ -158,7 +165,7 @@ def inspect_checkpoint(path,config,dataset):
         required=('model','optimizer','scheduler','scaler','training_state','rng','sampler','normalizers','best_validation_model'))
     require(record.get('scientific_schema')==SCHEMA,'legacy single-case/T1 checkpoints cannot warm-start unified training')
     require(digest(record['config'])==config.identity,'scientific configuration/full schedule differs; not exact resume')
-    require(record['implementation_identity']==implementation_identity(),'implementation changed; exact resume rejected')
+    require(approved_source(record['implementation_identity']),'implementation changed; exact resume rejected')
     require(record['dataset_identity']==dataset.config.identity and payload['normalizers']['identity']==dataset.norms.identity,'dataset/normalizers differ')
     require(record['certificate']['certification_id']==dataset.certificate['certification_id'],'certificate differs')
     require(record['runtime']['dependencies']['torch']==torch.__version__,'Torch differs; exact continuation not claimed')
@@ -195,6 +202,16 @@ def resume(path,config,dataset,root,*,monitor=None,persistence=None):
     engine.state.best_checkpoint=str(path) if engine.state.best_validation_step==engine.state.successful else engine.state.persistence.get('Drive_best') or engine.state.best_checkpoint
     engine.history_refs=payload.get('history_refs',[])
     engine.best_validation_model_state=payload['best_validation_model'];engine.parent_checkpoints=[str(path)];engine._elapsed_base=engine.state.elapsed_seconds
+    from .history import read as read_history
+    saved_monitor=payload.get('monitor_state')
+    # Verified immutable history restores legacy exposure counts; no RNG calls.
+    history=None
+    if not saved_monitor and engine.history_refs:
+        try:history=read_history(engine.history_refs)
+        except Exception as error:
+            import warnings
+            warnings.warn('MONITOR HISTORY UNAVAILABLE: exact optimizer/RNG continuation retained; unique-case display is unavailable: '+str(error),RuntimeWarning)
+    engine.monitor.restore_state(saved_monitor,run_id=engine.state.run_id,history=history,successful=engine.state.successful)
     engine.rng_generators,limitations=restore_rng(payload['rng'],target_device=config.device);require(not limitations,'exact RNG continuation unavailable: '+str(limitations))
     return engine
 

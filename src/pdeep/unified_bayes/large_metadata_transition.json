@@ -1,0 +1,8 @@
+{
+  "before": "16b77c6df38338f85ccd178fbf103969812021f0b6415515926e5fec3d661373",
+  "after": "5ce32466042fa2ab90f79f359c68e2babc17d1b85542f92aebe9717c67a28ef1",
+  "review": "Only default-preserving expected_model_config virtual method and actual parameter-count manifest metadata added to unified/training.py. Original geometric presets, losses, updates, scheduler, RNG, data, physics, reference and checkpoint tensors unchanged. All other exact-resume checks remain strict.",
+  "changed_file": "src/pdeep/unified/training.py",
+  "file_before": "9a9284fa4e4ab8fe0e5b82f19a421924e7c3c499962ec0154171f0c6c0121899",
+  "file_after": "22fd6d1e290ed7f8ce4f445a0c3bf1baf20dbaf4f2baa934b20031faaf3fa03e"
+}

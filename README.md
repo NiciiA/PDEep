@@ -1,92 +1,80 @@
 # PDE inverse reconstruction research
 
-## Unified G1 research workflow (new)
+## Unified G1 forward / inverse / hybrid workflow
 
-Use [04_g1_unified.ipynb](notebooks/04_g1_unified.ipynb) for **one shared network
-per configuration across all3 PDEs ×8 fixed qualified geometry instances**.
-The three independent configurations are A_GEO/KIN_001, C_GEO/FIELD_ONLY and
-C_GEO/ALL_001. Existing diagnostic notebooks/runs remain available below.
-Scientific choices and limits: [G1 unified experiment v1](docs/g1_unified_experiment_v1.md).
-Bounded implementation evidence: `reports/g1_unified/report.md` and JSON reports.
+Use [04_g1_unified.ipynb](notebooks/04_g1_unified.ipynb). Each independent
+A_GEO/KIN_001, C_GEO/FIELD_ONLY or C_GEO/ALL_001 network handles all three modes
+across all3 PDEs ×8 fixed qualified geometries. The explicit C3 field-conditioning
+path distinguishes known, unknown and N/A inputs. Unknown values are scrubbed;
+mode labels are not neural features. Physical priors, reference solutions and
+case-level splits are unchanged.
 
-Open directly after reviewing/pushing the new code and notebook to your repository:
+Main research now defaults to **large**: actual A26,706,821 and C27,889,925
+trainable parameters each, width384 with8 heads. Medium remains available.
+[Capacity, bounded evidence and T4 limitations](docs/g1_large_capacity.md).
+T4 memory/latency require the actual CUDA preflight; no GPU fit is claimed from CPU tests.
+
+[Specification, exact resume and execution instructions](docs/g1_conditioning_modes.md)
+· [Bounded implementation report](reports/g1_modes/report.md)
+· [Inference playground](notebooks/05_g1_playground.ipynb)
+
+Open after pushing the reviewed code:
 
 ```
 https://colab.research.google.com/github/OWNER/REPO/blob/REF/notebooks/04_g1_unified.ipynb
 ```
 
-No push was performed here. Replace OWNER/REPO and REF; configure `REPO_URL` in
-section1 and preferably pin `REPO_REF` to that full commit SHA. Private Git access
-uses an external credential helper/SSH agent, never embedded notebook credentials.
-Select a CUDA runtime. Run the setup cells (advanced implementation is collapsed)
-and existing-certificate resolution. Colab validates CUDA without CPU fallback;
-local CPU/MPS uses the installed checkout without importing or mounting Drive.
+Configure `REPO_URL` in setup and pin `REPO_REF` to the reviewed commit. Use external
+Git credentials, never tokens in notebook text. Colab requires CUDA; local CPU/MPS
+uses the installed checkout without cloning or mounting Drive.
 
-1. **Configure** section2. Saved defaults are research data target (3072/768/1536
-   physical cases), medium networks,4 independent cases/update,4096 queries/case,
-  30,000-update schedule and a3,000-update session stop. Preview performs no
-   dataset preparation or optimization. For your first bounded user-run pilot,
-   use `G1_MODE="smoke"`:2/2/2 cases/task,128 queries,3 planned updates, stop2.
-   Dataset preset `pilot` instead prepares768/384/384 independent physical cases.
-2. **Prepare**: deliberately set `G1_DATA_ACTION="prepare"`, rerun configuration
-   and section3. This is CPU/storage expensive. Each physical case uses the full existing CPU64 P4 solver once. Only labels for
-   its EXACT independent continuous encounter draws are retained (roughly5GB
-   research payload); full trajectories are discarded. No bank is recycled and no
-   PDE solver runs inside GPU updates. Per-case QC is required. First TRAIN case/task gets separate independent finer-reference checks.
-   Failures quarantine cases and block training. This does not rerun/overwrite
-   the old96-case qualification or imply a universal certificate.
-3. **Preflight**: set `G1_RUN_PREFLIGHT=True` and run section4 after loading data.
-   Zero optimizer updates; actual configured query count and largest selected
-   conditioning geometry/PDE,128 sensors, derivative paths and CUDA memory.
-   A one-case graph is accumulated four times. AMP auto explicitly resolves to
-   FP32; unverified T4 BF16/FP16 derivative training is not assumed.
-4. **Train**: set `G1_RUN_MODE="train"`, rerun configuration, load the known local
-   dataset index (`G1_DATA_ACTION="load"`), rerun preflight and execute the ONE
-   section5 training cell. It sequentially runs the selected configurations.
-   A live dashboard stays in that cell. No buttons or manual between-model edits.
-5. **Evaluate**: set `G1_EVALUATE=True`, select exact paths (or use the just-run
-   results), then section6. Default validation; deliberately select test only
-   after tuning/checkpoint selection. Section7 displays a few aggregate figures.
-   Full per-case/quantity data, paired intervals and Markdown/JSON reports go to
-   `local_output/G1_unified/evaluations/<experiment>/<split>/<selection>/`.
+1. Run setup/certificate cells. Existing qualifications are reused, never rerun.
+2. Configure main target50,000; scheduler/data horizon100,000 declared from the
+   beginning. Warmup250, cosine decay to3e-5 at100k. Milestones3k/15k/50k/100k
+   do not reset or stretch the schedule. Preview remains the saved default.
+3. Explicitly prepare/load/restore the same physical reference data with the new
+   horizon; all modes reuse its labels. The100k/4096 plan needs about13.5GB training
+   label payload plus evaluation/assets. It is offline CPU/storage work.
+4. Run bounded all-model/PDE/mode preflight on the actual T4. FP32 is the verified
+   path; no unverified FP16/BF16, silent query reduction or CPU training fallback.
+5. Select `G1_RUN_MODE="train"` and run the one sequential training cell. Live
+   objectives, per-mode losses/denominators,72-category exposure and measured ETA
+   stay visible. Research defaults stop each model at50k on its100k schedule.
+6. Explicit neural test evaluation, then numerical forward/Bayesian inverse and
+   hybrid controls, then combined tables/plots. No optimizer during evaluation.
+   The original six-method inverse comparison remains available.
 
-**Disconnect and exact resume.** Checkpoints save/verify locally first, then sync
-at the save cadence. Predictable Drive locations:
+For exact resume retain the ORIGINAL experiment ID, data plan, horizon, seeds and
+`G1_INITIALIZATION`, select action="resume", lookup="explicit", provide exact
+manifests and rerun preflight. Set stop100000 to continue the predeclared schedule.
+Inverse-only checkpoints need explicit action="finetune_inverse" under a NEW
+experiment ID, with new field modules/optimizer/scheduler. They are not trained
+forward/hybrid models automatically. No recursive Drive search.
+
+Local checkpoints verify before periodic Drive sync. Known pointer locations:
 
 ```
 DriveRoot/G1_unified/datasets/<dataset_id>/index.json
-DriveRoot/G1_unified/runs/<experiment_id>/experiment.json
-DriveRoot/G1_unified/runs/<experiment_id>/<model>/checkpoints/<run_id>/<artifact_id>/
+DriveRoot/G1_unified/runs/<experiment>/experiment.json
+DriveRoot/G1_unified/runs/<experiment>/<model>/checkpoints/<run_id>/<artifact_id>/
 ```
 
-The dataset index records exact verified label-case and sampling-space artifact locations. Training
-reads fast local storage, never random-access Drive. After a new runtime: run
-setup; restore using `G1_DATA_ACTION="restore"` and the exact Drive dataset index;
-keep the original experiment ID, full schedule, model/data settings and seed;
-use `G1_ACTION="resume"`, `G1_CHECKPOINT_LOOKUP="explicit"` and exact manifests:
+`pdeep.unified.workflow.explicit_experiment_paths` reads one exact registry path.
+Restore the dataset to fast local storage before training. The live dashboard
+separates local and Drive states; failed sync retains valid local artifacts.
 
-```python
-from pdeep.unified.workflow import explicit_experiment_paths
-G1_RESUME_PATHS = explicit_experiment_paths(
-    "/content/drive/MyDrive/PDEInverseResearch/G1_unified/runs/EXPERIMENT/experiment.json",
-    prefer_drive=True,
-)
-```
+Playground defaults load no weights and solve no reference problem. Supply a
+compatible three-mode checkpoint, select PDE/geometry, coefficient values/masks,
+optional observations, time and u/v. Exact current C3 coefficients are supported;
+arbitrary analytic functions, sparse field samples and unseen equations are not
+claimed. Optional example measurements/reference plots call the original solver
+only when explicitly enabled. Neural outputs are approximate, not certified solves.
 
-Place this after shared configuration and before training, retaining the ORIGINAL
-`G1_EXPERIMENT_ID`. Rerun preflight. Set session stop30,000 to continue the ORIGINAL
-30,000 schedule, rather than extending a3,000 schedule. Compatible finished models
-are retained; supplied partial models resume; selected models with no prior path
-start fresh. No legacy single-case warm-start or recursive checkpoint search.
-Resume restores weights, Adam moments, scheduler, RNG, keyed data ordering and
-successful counters. Source/Torch/device/config mismatches reject exact resume.
-Drive failures warn and preserve local artifacts; local Colab storage is temporary.
-
-All-eight evaluation measures unseen fields on familiar instances. A separately
-configured family holdout excludes that family from training and checkpoint
-selection. Additional geometry instances remain blocked until independently
-qualified. Three separate neural seeds (`G1_NEURAL_SEED`, with the fixed data seed unchanged) are supported but never launched
-automatically. There is no full-training/generalization claim before execution.
+All-eight coverage measures unseen fields on familiar fixed instances. No
+unseen-instance/equation or trained-accuracy claim exists before user execution.
+The earlier inverse-only extension remains documented in
+[G1 Bayesian evaluation](docs/g1_bayesian_evaluation.md) and
+[G1 unified experiment v1](docs/g1_unified_experiment_v1.md).
 
 ## Existing diagnostic workflow: G1_smooth_v1
 
