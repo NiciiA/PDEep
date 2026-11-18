@@ -11,3 +11,14 @@ reports/*.executed.ipynb
 /artifacts
 /reports
 .pdeep-editable-setup.json
+
+# Generated numerical datasets and transfer bundles (source/configuration only in Git).
+/G1_unified/
+/G1_smooth_v1/
+/pde-inverse-outputs/
+datasets/
+reference_cache/
+.working/
+*.tar.gz
+*.tar.gz.json
+*.zip

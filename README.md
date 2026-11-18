@@ -2,6 +2,20 @@
 
 ## Unified G1 forward / inverse / hybrid workflow
 
+Generate reference labels once on macOS or Colab and move the complete verified
+folder with ordinary filesystem copying. The portable dataset tools support
+incremental preparation/sync, explicit-manifest resume, local Colab restore and
+optional checksum-verified archives; no Drive API is required.
+[Preparation profiling and exact transfer commands](docs/g1_dataset_preparation.md).
+04 now uses this portable path; historical preparation functions remain available.
+
+04 now defaults to **balanced feasibility**:288 physical cases across all24 tasks,
+all three modes and a separately declared3,000-update schedule. CPU preparation
+uses RAM-budgeted spawn processes (`G1_DATA_WORKERS=0` auto,1 debug), exact block
+FEM reuse, incremental verified commits and explicit-manifest resume. Both data
+preparation and training remain preview-only until explicitly selected.
+[Feasibility, parallel preparation, progress audit and measured limits](docs/g1_feasibility_parallel.md).
+
 Use [04_g1_unified.ipynb](notebooks/04_g1_unified.ipynb). Each independent
 A_GEO/KIN_001, C_GEO/FIELD_ONLY or C_GEO/ALL_001 network handles all three modes
 across all3 PDEs ×8 fixed qualified geometries. The explicit C3 field-conditioning
@@ -29,10 +43,12 @@ Git credentials, never tokens in notebook text. Colab requires CUDA; local CPU/M
 uses the installed checkout without cloning or mounting Drive.
 
 1. Run setup/certificate cells. Existing qualifications are reused, never rerun.
-2. Configure main target50,000; scheduler/data horizon100,000 declared from the
+2. Use the default feasibility profile for288 cases/3,000 updates. For full
+   research select `G1_DATASET_PROFILE="research"`: main target50,000;
+   scheduler/data horizon100,000 declared from the
    beginning. Warmup250, cosine decay to3e-5 at100k. Milestones3k/15k/50k/100k
    do not reset or stretch the schedule. Preview remains the saved default.
-3. Explicitly prepare/load/restore the same physical reference data with the new
+3. Explicitly prepare/load/restore the selected physical reference data with its
    horizon; all modes reuse its labels. The100k/4096 plan needs about13.5GB training
    label payload plus evaluation/assets. It is offline CPU/storage work.
 4. Run bounded all-model/PDE/mode preflight on the actual T4. FP32 is the verified
@@ -40,7 +56,9 @@ uses the installed checkout without cloning or mounting Drive.
 5. Select `G1_RUN_MODE="train"` and run the one sequential training cell. Live
    objectives, per-mode losses/denominators,72-category exposure and measured ETA
    stay visible. Research defaults stop each model at50k on its100k schedule.
-6. Explicit neural test evaluation, then numerical forward/Bayesian inverse and
+6. Use validation reports during feasibility; its test sweep is blocked to protect
+   future research test cases. Research supports explicit neural test evaluation,
+   then numerical forward/Bayesian inverse and
    hybrid controls, then combined tables/plots. No optimizer during evaluation.
    The original six-method inverse comparison remains available.
 
@@ -54,7 +72,7 @@ forward/hybrid models automatically. No recursive Drive search.
 Local checkpoints verify before periodic Drive sync. Known pointer locations:
 
 ```
-DriveRoot/G1_unified/datasets/<dataset_id>/index.json
+DriveRoot/G1_unified/datasets/<dataset_id>/manifest.json
 DriveRoot/G1_unified/runs/<experiment>/experiment.json
 DriveRoot/G1_unified/runs/<experiment>/<model>/checkpoints/<run_id>/<artifact_id>/
 ```

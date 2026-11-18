@@ -13,11 +13,14 @@ with tempfile.TemporaryDirectory(prefix='g1-mode-notebooks-') as value:
 from pdeep.unified import dataset
 from pdeep.unified_bayes.operators import ForwardOperators
 from pdeep.smooth.reference import Reference
+from pdeep.preparation import workflow as preparation_workflow, parallel as preparation_parallel
 
 def forbidden(*a,**kw):
     raise AssertionError("Safe notebook attempted training, reference preparation or Drive")
 torch.optim.AdamW.__init__ = forbidden
 dataset.prepare_dataset = forbidden
+preparation_workflow.prepare = forbidden
+preparation_parallel.prepare_dataset = forbidden
 ForwardOperators.prepare = forbidden
 Reference.__init__ = forbidden
 class NoDrive:
