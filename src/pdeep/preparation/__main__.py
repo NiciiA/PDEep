@@ -8,13 +8,18 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='command',required=True)
     a=sub.add_parser('prepare');a.add_argument('--output');a.add_argument('--manifest');a.add_argument('--certificate');a.add_argument('--preset',choices=('smoke','pilot','research'));a.add_argument('--profile',choices=('feasibility','research'),default='research');a.add_argument('--updates',type=int);a.add_argument('--queries',type=int);a.add_argument('--sync-to');a.add_argument('--max-cases',type=int);a.add_argument('--workers',type=int,default=0);a.add_argument('--block-cases',type=int,default=2);a.add_argument('--reuse-from')
     a=sub.add_parser('status');a.add_argument('source');a.add_argument('--verify',choices=('index','checksums','payloads'),default='index');a.add_argument('--mirror')
+    a=sub.add_parser('prepare-label');a.add_argument('--manifest',required=True);a.add_argument('--request',required=True);a.add_argument('--certificate')
     a=sub.add_parser('verify');a.add_argument('source');a.add_argument('--complete',action='store_true')
     a=sub.add_parser('sync');a.add_argument('source');a.add_argument('destination')
     a=sub.add_parser('restore');a.add_argument('source');a.add_argument('destination')
     a=sub.add_parser('pack');a.add_argument('source');a.add_argument('archive')
     a=sub.add_parser('export-legacy');a.add_argument('source');a.add_argument('destination');a.add_argument('--certificate',required=True,help='exact full producer certificate JSON; no new qualification')
     args=p.parse_args(argv)
-    if args.command=='status':
+    if args.command=='prepare-label':
+        from ..learning_diagnostics.certificates import resolve_certification
+        from .supplements import prepare_label
+        result=prepare_label(args.manifest,args.request,resolve_certification(requested_capabilities={'certification_id':None},configured_path=args.certificate).require())
+    elif args.command=='status':
         from .status import status
         result=status(args.source,verify=args.verify,mirror=args.mirror)
     elif args.command=='verify':

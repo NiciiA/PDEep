@@ -1,10 +1,12 @@
 """Simple notebook facade; preview is inert and restored data stay on local disk."""
 from pathlib import Path
+import json,time
 from ..core import require
 from ..artifact_drive import PersistencePolicy
 from ..unified_modes.dashboard import Dashboard
 from .portable import Dataset,resolve_manifest,read_index
 from .transfer import sync_folder,extract_archive
+from .loading import load_dataset
 
 def progress_callback(dashboard):
     def report(stage,**details):
@@ -23,22 +25,35 @@ def prepare(config,root,certificate,*,action='preview',manifest=None,persistence
     if action=='preview':return None
     dashboard=monitor or Dashboard(config);report=progress_callback(dashboard);root=Path(root);folder=root/'datasets'/config.identity
     with dashboard.live():
+        restore_profile=None
         if action=='restore':
+            transfer_start=time.perf_counter()
             require(manifest,'restore requires exact Drive dataset directory, manifest, or archive')
             dashboard.phase('Restoring verified dataset to fast local storage',source=str(manifest))
             if str(manifest).endswith('.tar.gz'):
-                result=extract_archive(manifest,folder)
+                side=Path(str(manifest)+'.json');local=folder/'manifest.json'
+                if side.is_file() and local.is_file() and read_index(local)[1]['manifest_identity']==json.loads(side.read_text()).get('manifest_identity'):
+                    result={'manifest':str(local),'copied_files':0,'reused_local_snapshot':True};report('Reusing locally verified archive restore',archive_payload_reads=0)
+                else:result=extract_archive(manifest,folder)
             else:
                 _,source=read_index(manifest);require(source['dataset_identity']==config.identity,'selected dataset differs from configured plan')
-                result=sync_folder(manifest,folder,progress=report)
-            manifest=result['manifest']
+                local=folder/'manifest.json'
+                if local.is_file() and read_index(local)[1]['manifest_identity']==source['manifest_identity']:
+                    # Matching local inventory is reverified by load_dataset.
+                    # No remote payload reads or duplicate local copying.
+                    result={'manifest':str(local),'copied_files':0,'reused_local_snapshot':True}
+                    report('Reusing restored local dataset',manifest=str(local),Drive_payload_reads=0)
+                else:result=sync_folder(manifest,folder,progress=report)
+            manifest=result['manifest'];restore_profile={**result,'wall_seconds':time.perf_counter()-transfer_start,'source_payload_scope':'no remote payload reads on matching local snapshot; initial copy/extraction otherwise'}
         if action in ('load','restore'):
             require(manifest,'load requires an exact portable dataset manifest/directory')
             policy=persistence or PersistencePolicy()
             selected=resolve_manifest(manifest)
             require(policy.drive_mount is None or not selected.resolve().is_relative_to(Path(policy.drive_mount).resolve()),'use restore to copy the selected Drive dataset to fast local storage before loading')
-            data=Dataset(manifest,certificate,progress=report)
+            data=load_dataset(manifest,certificate,progress=report)
             require(data.config.identity==config.identity,'loaded dataset/configuration differs')
+            if restore_profile:data.load_profile['restore']=restore_profile
+            report('Local dataset ready',manifest=str(data.path),profile=data.load_profile,cache_limit_bytes=data.cache.max_bytes)
             return data
         if manifest:
             selected,index=read_index(manifest);require(index['dataset_identity']==config.identity,'resume dataset/configuration differs');folder=selected.parent;manifest=selected

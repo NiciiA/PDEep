@@ -16,6 +16,12 @@ FEM reuse, incremental verified commits and explicit-manifest resume. Both data
 preparation and training remain preview-only until explicitly selected.
 [Feasibility, parallel preparation, progress audit and measured limits](docs/g1_feasibility_parallel.md).
 
+Feasibility preflight now uses its exact prepared training schedule through the
+same provider as training. Restored local datasets and bounded verified payload
+caches are reused across notebook cells. Missing draws fail explicitly, with an
+optional one-draw offline repair; no loading/preflight solver fallback.
+[Preflight fix, loading measurements and exact notebook settings](docs/g1_preflight_loading.md).
+
 Use [04_g1_unified.ipynb](notebooks/04_g1_unified.ipynb). Each independent
 A_GEO/KIN_001, C_GEO/FIELD_ONLY or C_GEO/ALL_001 network handles all three modes
 across all3 PDEs ×8 fixed qualified geometries. The explicit C3 field-conditioning
