@@ -3,7 +3,7 @@ from pathlib import Path
 import json,time
 from ..core import require
 from ..artifact_drive import PersistencePolicy
-from ..unified_modes.dashboard import Dashboard
+from .monitor import Dashboard
 from .portable import Dataset,resolve_manifest,read_index
 from .transfer import sync_folder,extract_archive
 from .loading import load_dataset

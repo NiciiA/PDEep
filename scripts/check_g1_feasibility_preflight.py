@@ -15,16 +15,23 @@ from pdeep.smooth.reference import Reference
 from pdeep.smooth.data import Case
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--manifest',required=True);parser.add_argument('--model',choices=('all','A_GEO/KIN_001','C_GEO/FIELD_ONLY','C_GEO/ALL_001'),default='all');parser.add_argument('--device',choices=('cpu','cuda'),default='cpu');parser.add_argument('--full',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--manifest',required=True);parser.add_argument('--model',choices=('all','A_GEO/KIN_001','C_GEO/FIELD_ONLY','C_GEO/ALL_001'),default='all');parser.add_argument('--device',choices=('cpu','cuda'),default='cpu');parser.add_argument('--full',action='store_true');parser.add_argument('--simulate-unfused-consumer',action='store_true');parser.add_argument('--output',default='reports/g1_preflight_draw_fix');args=parser.parse_args()
     if args.device=='cuda' and not torch.cuda.is_available():parser.error('CUDA requested but unavailable; no CPU fallback')
     def forbidden(*a,**kw):raise AssertionError('reference solve or optimizer forbidden during preflight')
     Reference.__init__=forbidden;Case.evaluate=forbidden;torch.optim.AdamW.__init__=forbidden;torch.set_num_threads(2)
+    if args.simulate_unfused_consumer:
+        from pdeep.preparation import coordinates
+        native=coordinates.physical_design
+        def separate(case,count,**kwargs):
+            design=native(case,count,**kwargs)
+            return next(d for name,d in coordinates.arithmetic_variants(case,count,observation=kwargs.get('observation',False),set_id=kwargs.get('set_id',0),design=design) if name=='separate-012')
+        coordinates.physical_design=separate
     d=load_dataset(args.manifest,resolve_certification(requested_capabilities={'certification_id':None}).require())
     keys=('A_GEO/KIN_001','C_GEO/FIELD_ONLY','C_GEO/ALL_001') if args.model=='all' else (args.model,)
     configs=configurations(d.config,models=keys,device=args.device,query_chunk=2048,experiment_id='bounded-preflight-no-training')
-    out=Path('reports/g1_preflight_loading');out.mkdir(parents=True,exist_ok=True)
+    out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
     if args.full:
-        path,result=run_preflight(configs,d,out);(out/'full-preflight.json').write_text(json.dumps({'path':path,'result':result},indent=2)+'\n');return
+        path,result=run_preflight(configs,d,out);(out/'full-preflight.json').write_text(json.dumps({'path':path,'result':result,'unfused_consumer_simulated':args.simulate_unfused_consumer,'coordinate_replay':d.load_profile.get('prepared_coordinate_replay',{})},indent=2)+'\n');return
     for c in configs:
         start=time.perf_counter();r=four_case_control(c,d);r.update(total_wall_seconds=time.perf_counter()-start,host_peak_RSS_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024))
         (out/(c.model_key.replace('/','_')+'.json')).write_text(json.dumps(r,indent=2)+'\n')

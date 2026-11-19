@@ -22,6 +22,11 @@ caches are reused across notebook cells. Missing draws fail explicitly, with an
 optional one-draw offline repair; no loading/preflight solver fallback.
 [Preflight fix, loading measurements and exact notebook settings](docs/g1_preflight_loading.md).
 
+[Portable draw identity correction and stage clocks](docs/g1_preflight_portable_draws.md):
+feasibility resolves cross-CPU fused/unfused coordinate arithmetic only through
+exact verified hashes, audits every required draw before GPU profiling and slices
+paired diagnostics without another lookup. Existing labels need no regeneration.
+
 Use [04_g1_unified.ipynb](notebooks/04_g1_unified.ipynb). Each independent
 A_GEO/KIN_001, C_GEO/FIELD_ONLY or C_GEO/ALL_001 network handles all three modes
 across all3 PDEs ×8 fixed qualified geometries. The explicit C3 field-conditioning

@@ -18,7 +18,7 @@ from ..unified.dataset import quality_check_full
 from .portable import read_index,verify_folder,commit,add_artifact
 from .numerics import FastReference
 
-def prepare_label(manifest,request,certificate):
+def prepare_label(manifest,request,certificate,*,_context=None):
     path,index=verify_folder(manifest);r=json.loads(Path(request).read_text());config=DatasetConfig(**index['config'])
     require(r['schema']=='G1-exact-missing-label-request-v1' and r['dataset_identity']==config.identity and r['producer_certificate']==index['certificate_id'],'missing-label request belongs to a different dataset/producer')
     require(certificate['certification_id']==index['certificate_id'],'offline supplement requires original producer runtime/certificate; existing references are never relabeled')
@@ -32,9 +32,36 @@ def prepare_label(manifest,request,certificate):
         except BlockingIOError:raise ValueError('dataset preparation coordinator is active; do not repair concurrently') from None
         path,index=read_index(path)
         if key in index.get('supplemental_labels',{}).get(c.case_id,{}):return {'status':'already_prepared','reference_solves':0}
-        full=FastReference(c);qc=quality_check_full(c,full,normalizers(certificate),config,finer=False);require(qc['passed'],'offline supplement numerical QC failed')
+        context={} if _context is None else _context
+        require(context.get('case_id',c.case_id)==c.case_id,'offline response context belongs to another case')
+        newly_solved='full' not in context
+        if 'full' not in context:
+            full=FastReference(c);qc=quality_check_full(c,full,normalizers(certificate),config,finer=False);require(qc['passed'],'offline supplement numerical QC failed')
+            context.update(case_id=c.case_id,full=full,qc=qc)
+        full=context['full'];qc=context['qc']
         y=full.evaluate(x,t,q);require(y.dtype==np.float64 and np.isfinite(y).all(),'supplement needs finite CPU64 labels')
         root=path.parent/'reference_cache/supplements';stem=digest((config.identity,c.case_id,key,certificate['certification_id']))
         record=write_artifact(root,stem,{'artifact_type':'diagnostic_bundle','architecture_id':'REFERENCE_ONLY','run_id':'G1-explicit-exact-label-repair','dataset_identity':config.identity,'case_id':c.case_id,'coordinates_id':key,'certificate_id':certificate['certification_id'],'execution_source':config.reference_execution_source,'normalizer_identity':index['normalizer_identity'],'physics':certificate['source_revision']},{'position':torch.from_numpy(x),'physical_time':torch.from_numpy(t),'quantity_id':torch.from_numpy(q),'labels':torch.from_numpy(y),'qc':qc},required=('position','physical_time','quantity_id','labels','qc'),idempotent=True)
         add_artifact(index,path.parent,record);index.setdefault('supplemental_labels',{}).setdefault(c.case_id,{})[key]=record.relative_to(path.parent).as_posix();commit(path,index)
-        return {'status':'prepared','artifact':str(record),'coordinates_id':key,'points':len(x),'physical_cases_solved':1,'original_case_artifacts_modified':False}
+        return {'status':'prepared','artifact':str(record),'coordinates_id':key,'points':len(x),'physical_cases_solved':int(newly_solved),'original_case_artifacts_modified':False}
+
+def prepare_label_batch(manifest,audit,certificate):
+    """Explicit complete audit repair, grouped by case with ONE live trajectory.
+
+    No new draws are selected. This is never invoked by preflight or loading.
+    Existing single-label commits/checks/locking are reused without changing QC.
+    """
+    from tempfile import TemporaryDirectory
+    body=json.loads(Path(audit).read_text());path,index=read_index(manifest)
+    require(body['schema']=='G1-feasibility-preflight-dependencies-v1' and body['dataset_identity']==index['dataset_identity'],'batch audit/dataset mismatch')
+    groups={}
+    for request in body['missing']:groups.setdefault(request['case_id'],{})[request['coordinates_id']]=request
+    results=[];solved=0
+    with TemporaryDirectory(prefix='g1-explicit-label-repair-') as tmp:
+        for cid,requests in sorted(groups.items()):
+            context={}
+            for key,request in sorted(requests.items()):
+                file=Path(tmp)/(key+'.json');file.write_text(json.dumps(request))
+                results.append(prepare_label(path,file,certificate,_context=context))
+            solved+=int('full' in context);del context
+    return {'status':'prepared','requested_designs':len(results),'new_full_reference_cases':solved,'peak_live_reference_cases':1 if solved else 0,'results':results,'original_case_artifacts_modified':False}

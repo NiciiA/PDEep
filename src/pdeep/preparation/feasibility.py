@@ -30,7 +30,7 @@ def parent_configuration(config):
     return replace(config,preset='research',counts=(128,32,64),stream_updates=100000)
 
 def source_identity():
-    paths=('feasibility.py','feasibility_training.py','provider.py')
+    paths=('feasibility.py','feasibility_training.py','provider.py','coordinates.py')
     return digest({p:sha256(Path(__file__).with_name(p)) for p in paths})
 
 def make_plan(config,rows,parent_config,parent_events):

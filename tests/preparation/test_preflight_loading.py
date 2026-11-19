@@ -66,10 +66,19 @@ def test_shared_preflight_logic_is_bound_without_mutating_research_or_streams(vi
     monkeypatch.setattr(research,'model_inventory',lambda m:{'trainable_parameters':4,'model_config':{}})
     monkeypatch.setattr(research,'profile',lambda m,b,a,**k:{'status':'fits','optimizer_steps':0})
     monkeypatch.setattr(research,'accumulated_backward',accumulated)
+    def old_progress(*a,**k):pytest.fail('preflight updated a prior cell monitor')
+    monkeypatch.setattr(d,'progress',old_progress,raising=False)
+    ready=d.require_ready
+    def readiness(split):
+        ready(split);d.progress('Dataset readiness',split=split,seconds=.1026)
+    monkeypatch.setattr(d,'require_ready',readiness)
     original_provider=research.Provider
     path,r=run_preflight(configs,d,tmp_path)
+    assert d.progress is old_progress
     assert research.Provider is original_provider and r['provider']=='FeasibilityProvider' and r['split']=='train'
-    assert len(batches)==12 and set(d.ready)=={'train'} and digest(tree_identity(capture_rng()))==rng
+    assert len(batches)==24 and set(d.ready)=={'train'} and digest(tree_identity(capture_rng()))==rng
+    assert len(r['representative_accumulation_reports'])==3
+    assert {c.family for b in batches for c in b.cases}>={'annulus','rectangle','hole','square'}
     after,new_ids=train.batch(0);assert new_ids==ids and train.state_dict(0)==state
     torch.testing.assert_close(before.queries.value,after.queries.value,atol=0,rtol=0)
     assert read_payload(path)[1]['preflight']['mapping_identity']==d.index['feasibility']['mapping_identity']
@@ -121,3 +130,75 @@ def test_repeat_restore_uses_verified_local_snapshot_not_source_payloads(prepare
     archive=tmp_path/'transfer.tar.gz';archive_dataset(prepared.path,archive);monkeypatch.setattr(workflow,'extract_archive',forbidden)
     same=workflow.prepare(prepared.config,root,certificate,action='restore',manifest=archive)
     assert same is first and same.load_profile['restore']['reused_local_snapshot']
+
+def test_exact_reported_cross_cpu_hash_is_replayed_not_approximately_matched(certificate,monkeypatch):
+    from pdeep.preparation import coordinates
+    from pdeep.smooth.data import tokens
+    c=Case('annulus','poisson','train',2);sid=(SCHEMA,'encounter',42,339,0)
+    native=physical_design(c,64,observation=True,set_id=sid)
+    variants=dict(coordinates.arithmetic_variants(c,64,observation=True,set_id=sid,design=native))
+    producer=variants['fma-210'];consumer=variants['separate-012']
+    expected='077a8e086ef4aae26e775a408b14a9751da821caeb4d115356ab7930fd43e395'
+    reported='3bd26d89f5f0bde563c3aef1d8ffb3540726f3feee21124e888bf1e746de0a04'
+    assert coordinates_id(*producer[:3])==expected and coordinates_id(*consumer[:3])==reported
+    assert np.max(abs(producer[0]-consumer[0]))==np.finfo(float).eps/2
+    clean=torch.arange(64,dtype=torch.float64);seen=[]
+    def evaluate(c,x,t,q):
+        key=coordinates_id(x,t,q);seen.append(key);assert key==expected;return clean.numpy()
+    d=SimpleNamespace(config=configuration(),norms=Normalizers.fromdict(certificate['normalizers']),index={},load_profile={},require_case=lambda c:None,cache=SimpleNamespace(_payload=lambda c:{'labels':{expected:clean}},evaluate=evaluate))
+    monkeypatch.setattr(coordinates,'physical_design',lambda *a,**kw:consumer)
+    p=object.__new__(FeasibilityProvider);p.dataset=d;p.norms=d.norms;p.cache=d.cache
+    got,meta=p.token_set(c,64,observation=True,set_id=sid)
+    want,wi=tokens(c,64,d.norms,observation=True,set_id=sid,coordinates=producer,clean=clean.numpy())
+    for name in vars(got):
+        if getattr(got,name) is not None:torch.testing.assert_close(getattr(got,name),getattr(want,name),atol=0,rtol=0)
+    assert meta['identity']==wi['identity'] and seen==[expected]
+
+def test_smaller_diagnostic_slices_verified_values_without_new_lookup(virtual_training,monkeypatch):
+    d=virtual_training;draws=TrainingDraws(d);case=d.cases('train')[0]
+    full=draws.preflight_batch(d,case,'INVERSE',4096,'cpu',42)
+    monkeypatch.setattr(d.cache,'evaluate',lambda *a,**k:pytest.fail('a prefix caused another reference lookup'))
+    for n in (32,64):
+        small=draws.preflight_batch(d,case,'INVERSE',n,'cpu',42)
+        for name in vars(full.queries):
+            if getattr(full.queries,name) is not None:torch.testing.assert_close(getattr(small.queries,name),getattr(full.queries,name)[:,:n],atol=0,rtol=0)
+
+def test_audit_collects_all_missing_draws_before_any_model(virtual_training,tmp_path,monkeypatch):
+    d=virtual_training
+    monkeypatch.setitem(d.index,'manifest_identity','unit-only');monkeypatch.setitem(d.index,'certificate_id','unit-only')
+    monkeypatch.setattr(d.cache,'_payload',lambda c:{'labels':{}},raising=False)
+    chosen=d.cases('train')[:2];draws=TrainingDraws(d)
+    monkeypatch.setattr(research,'create',lambda *a,**k:pytest.fail('model allocated before audit'))
+    with pytest.raises(ValueError,match='ALL 4 missing'):draws.audit(chosen,tmp_path)
+    report=json.loads(next((tmp_path/'preflight-draw-audits').glob('*.json')).read_text())
+    assert len(report['required'])==len(report['missing'])==4 and report['model_allocations']==0
+    assert report['independent_designs_required']==report['reference_solves']==0 and not draws.prepared
+
+def test_monitor_separates_old_lifetime_from_readiness_and_preceding_work(monkeypatch):
+    from pdeep.preparation import monitor
+    clock=[0.];monkeypatch.setattr(monitor.time,'monotonic',lambda:clock[0])
+    old=monitor.Dashboard(notebook=False);clock[0]=658.33;old.phase('readiness',seconds=.1026)
+    assert old.latest['cell_elapsed_seconds']==658.33 and old.latest['reported_stage_seconds']==.1026
+    fresh=monitor.Dashboard(notebook=False)
+    with fresh.operation('Architecture inventory'):clock[0]+=4
+    with fresh.operation('TRAIN readiness'):
+        clock[0]+=.1026;fresh.phase('Dataset readiness',seconds=.1026)
+    records=fresh.latest['completed_operation_timings']
+    assert records[0]['seconds']==4 and records[1]['seconds']==pytest.approx(.1026)
+    assert fresh.latest['cell_elapsed_seconds']==pytest.approx(4.1026)
+
+def test_batch_offline_repair_reuses_one_reference_per_case(prepared,certificate,tmp_path,monkeypatch):
+    from pdeep.preparation import supplements
+    root=tmp_path/'batch';sync_folder(prepared.path,root);d=Dataset(root,certificate);c=d.cases('train')[0];requests=[]
+    for point in (.313,.317):
+        with pytest.raises(MissingPreparedDraw) as caught:d.cache.evaluate(c,np.array([[point,.449]]),np.zeros(1),np.zeros(1,np.int64))
+        requests.append(caught.value.request)
+    audit=tmp_path/'audit.json';audit.write_text(json.dumps({'schema':'G1-feasibility-preflight-dependencies-v1','dataset_identity':d.config.identity,'missing':requests}))
+    calls=[]
+    def reference(case):calls.append(case.case_id);return SimpleNamespace(evaluate=lambda x,t,q:np.full(len(x),2.,np.float64))
+    monkeypatch.setattr(supplements,'FastReference',reference)
+    monkeypatch.setattr(supplements,'quality_check_full',lambda *a,**k:{'passed':True,'scope':'unit mock only'})
+    result=supplements.prepare_label_batch(d.path,audit,certificate)
+    assert result['requested_designs']==2 and result['new_full_reference_cases']==1 and len(calls)==1
+    assert [r['physical_cases_solved'] for r in result['results']]==[1,0]
+    assert supplements.prepare_label_batch(d.path,audit,certificate)['new_full_reference_cases']==0 and len(calls)==1
