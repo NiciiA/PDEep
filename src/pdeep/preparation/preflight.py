@@ -116,8 +116,8 @@ def run_preflight(configs,dataset,root,*,monitor=None,query_counts=None):
     require(not query_counts,'optional throughput sweeps need explicitly prepared designs; use the declared4096-query preflight first')
     require(all(c.query_count==dataset.config.stream_queries==4096 and c.updates==3000 for c in configs),'preflight must use4096 queries and the exact3000-update schedule')
     from ..artifact_rng import capture_rng,restore_rng
-    from .feasibility import source_identity
-    require(all(c.feasibility_source==source_identity() for c in configs),'feasibility adapter source changed; restart/reload and rerun configuration before preflight')
+    from .compatibility import approved_adapter
+    require(all(approved_adapter(c.feasibility_source) for c in configs),'feasibility adapter source changed; restart/reload and rerun configuration before preflight')
     invocation_start=time.perf_counter()
     monitor=monitor or Dashboard(dataset.config);monitor.latest['preceding_dataset_load']=copy.deepcopy(getattr(dataset,'load_profile',{}))
     rng=capture_rng();previous_progress=getattr(dataset,'progress',None);dataset.progress=monitor.phase
@@ -135,6 +135,9 @@ def run_preflight(configs,dataset,root,*,monitor=None,query_counts=None):
     def accumulated(*args,**kwargs):
         with _operation(monitor,'Worst-mesh four-case backward',**monitor.latest.get('details',{})):return original.accumulated_backward(*args,**kwargs)
     try:
+        from .readiness import ensure_ready
+        with _operation(monitor,'Complete training/validation reference readiness'):
+            ensure_ready(configs,dataset,root)
         draws=TrainingDraws(dataset)
         with _operation(monitor,'Verify ALL prepared preflight draws'):
             audit_path,_=draws.audit([*required_cases(dataset),*diverse_cases(dataset)],root)

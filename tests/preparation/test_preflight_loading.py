@@ -72,6 +72,7 @@ def test_shared_preflight_logic_is_bound_without_mutating_research_or_streams(vi
     def readiness(split):
         ready(split);d.progress('Dataset readiness',split=split,seconds=.1026)
     monkeypatch.setattr(d,'require_ready',readiness)
+    monkeypatch.setattr('pdeep.preparation.readiness.ensure_ready',lambda *a,**k:{'status':'ready','scope':'synthetic adapter fixture; complete audit tested independently'})
     original_provider=research.Provider
     path,r=run_preflight(configs,d,tmp_path)
     assert d.progress is old_progress

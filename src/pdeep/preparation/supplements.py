@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from ..core import require,digest
-from ..artifact_io import write_artifact
+from ..artifact_io import write_artifact,sha256
 from ..smooth.data import Case
 from ..smooth.certification import authorize,normalizers
 from ..unified.config import DatasetConfig
@@ -24,7 +24,7 @@ def prepare_label(manifest,request,certificate,*,_context=None):
     require(certificate['certification_id']==index['certificate_id'],'offline supplement requires original producer runtime/certificate; existing references are never relabeled')
     authorize(certificate,pdes=config.pdes,families=config.families,normalizer_identity=index['normalizer_identity'])
     pde,family,split,i=r['case_key'];c=Case(family,pde,split,i,config.conditioning_h)
-    require(split=='train' and c.case_id==r['case_id'] and c.case_id in index['records'],'optimizer-preflight repair requires an existing TRAIN case')
+    require(split in ('train','validation') and c.case_id==r['case_id'] and c.case_id in index['records'],'offline training/validation repair requires an existing non-test case')
     x=np.asarray(r['position'],np.float64);t=np.asarray(r['physical_time'],np.float64);q=np.asarray(r['quantity_id'],np.int64);key=coordinates_id(x,t,q)
     require(key==r['coordinates_id'] and len(x)==r['points'],'exact requested coordinate checksum differs')
     with (path.parent/'.preparation.lock').open('a+') as guard:
@@ -53,7 +53,16 @@ def prepare_label_batch(manifest,audit,certificate):
     """
     from tempfile import TemporaryDirectory
     body=json.loads(Path(audit).read_text());path,index=read_index(manifest)
-    require(body['schema']=='G1-feasibility-preflight-dependencies-v1' and body['dataset_identity']==index['dataset_identity'],'batch audit/dataset mismatch')
+    if body.get('signature',{}).get('schema')=='G1-complete-training-readiness-v1':
+        require(body.get('content_digest')==digest({k:v for k,v in body.items() if k!='content_digest'}) and body['signature']['dataset']==index['dataset_identity'],'batch audit/dataset mismatch')
+        from .portable import relative
+        requests=[]
+        for item in body['missing']:
+            file=relative(Path(audit).parent,item['request_file']);require(sha256(file)==item['sha256'],'missing-label request checksum mismatch')
+            request=json.loads(file.read_text());require(request['coordinates_id']==item['coordinates_id'] and request['case_id']==item['case_id'],'request identity mismatch');requests.append(request)
+        body={**body,'missing':requests}
+    else:
+        require(body['schema']=='G1-feasibility-preflight-dependencies-v1' and body['dataset_identity']==index['dataset_identity'],'batch audit/dataset mismatch')
     groups={}
     for request in body['missing']:groups.setdefault(request['case_id'],{})[request['coordinates_id']]=request
     results=[];solved=0

@@ -1,0 +1,5 @@
+{
+  "before": "d58219e5a8eea2f299259f6dbe8fffc64a9aa951209d564bef54d7e94eb42181",
+  "after": "d4926fb5fee323acd3b42bf0c1ec8c59a35794aa9dd293666eacef8ee95067d9",
+  "scope": "reviewed feasibility data access and checkpoint boundary fixes only; unchanged case schedule, model, objectives, optimizer, priors and numerical solver"
+}

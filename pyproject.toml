@@ -28,3 +28,5 @@ addopts = "-ra"
 [tool.setuptools.package-data]
 "pdeep.unified_bayes" = ["*.json"]
 "pdeep.unified_modes" = ["*.json"]
+
+"pdeep.preparation" = ["*.json"]

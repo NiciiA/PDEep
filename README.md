@@ -73,6 +73,8 @@ uses the installed checkout without cloning or mounting Drive.
    hybrid controls, then combined tables/plots. No optimizer during evaluation.
    The original six-method inverse comparison remains available.
 
+Feasibility now audits all24,096 training/validation designs before optimization and saves a verified checkpoint before validation. See [validation readiness and update500 recovery](docs/g1_validation_readiness.md) for exact resume and Drive settings.
+
 For exact resume retain the ORIGINAL experiment ID, data plan, horizon, seeds and
 `G1_INITIALIZATION`, select action="resume", lookup="explicit", provide exact
 manifests and rerun preflight. Set stop100000 to continue the predeclared schedule.
